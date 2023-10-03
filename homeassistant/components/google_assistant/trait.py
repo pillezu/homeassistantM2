@@ -173,6 +173,8 @@ TRAITS: list[type[_Trait]] = []
 
 FAN_SPEED_MAX_SPEED_COUNT = 5
 
+SOUND_MODE = "sound mode"
+
 _TraitT = TypeVar("_TraitT", bound="_Trait")
 
 
@@ -1605,7 +1607,7 @@ class ModesTrait(_Trait):
 
     SYNONYMS = {
         "preset mode": ["preset mode", "mode", "preset"],
-        "sound mode": ["sound mode", "effects"],
+        SOUND_MODE: [SOUND_MODE, "effects"],
         "option": ["option", "setting", "mode", "value"],
     }
 
@@ -1662,7 +1664,7 @@ class ModesTrait(_Trait):
 
         for domain, attr, name in (
             (fan.DOMAIN, fan.ATTR_PRESET_MODES, "preset mode"),
-            (media_player.DOMAIN, media_player.ATTR_SOUND_MODE_LIST, "sound mode"),
+            (media_player.DOMAIN, media_player.ATTR_SOUND_MODE_LIST, SOUND_MODE),
             (input_select.DOMAIN, input_select.ATTR_OPTIONS, "option"),
             (select.DOMAIN, select.ATTR_OPTIONS, "option"),
             (humidifier.DOMAIN, humidifier.ATTR_AVAILABLE_MODES, "mode"),
@@ -1692,7 +1694,7 @@ class ModesTrait(_Trait):
                 mode_settings["preset mode"] = attrs.get(fan.ATTR_PRESET_MODE)
         elif self.state.domain == media_player.DOMAIN:
             if media_player.ATTR_SOUND_MODE_LIST in attrs:
-                mode_settings["sound mode"] = attrs.get(media_player.ATTR_SOUND_MODE)
+                mode_settings[SOUND_MODE] = attrs.get(media_player.ATTR_SOUND_MODE)
         elif self.state.domain == input_select.DOMAIN:
             mode_settings["option"] = self.state.state
         elif self.state.domain == select.DOMAIN:
@@ -1784,7 +1786,7 @@ class ModesTrait(_Trait):
             return
 
         if self.state.domain == media_player.DOMAIN and (
-            sound_mode := settings.get("sound mode")
+            sound_mode := settings.get(SOUND_MODE)
         ):
             await self.hass.services.async_call(
                 media_player.DOMAIN,

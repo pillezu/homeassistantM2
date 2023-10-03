@@ -175,6 +175,7 @@ FAN_SPEED_MAX_SPEED_COUNT = 5
 
 SOUND_MODE = "sound mode"
 PRESET_MODE = "preset mode"
+OPTION = "option"
 
 _TraitT = TypeVar("_TraitT", bound="_Trait")
 
@@ -1609,7 +1610,7 @@ class ModesTrait(_Trait):
     SYNONYMS = {
         PRESET_MODE: [PRESET_MODE, "mode", "preset"],
         SOUND_MODE: [SOUND_MODE, "effects"],
-        "option": ["option", "setting", "mode", "value"],
+        OPTION: [OPTION, "setting", "mode", "value"],
     }
 
     @staticmethod
@@ -1666,8 +1667,8 @@ class ModesTrait(_Trait):
         for domain, attr, name in (
             (fan.DOMAIN, fan.ATTR_PRESET_MODES, PRESET_MODE),
             (media_player.DOMAIN, media_player.ATTR_SOUND_MODE_LIST, SOUND_MODE),
-            (input_select.DOMAIN, input_select.ATTR_OPTIONS, "option"),
-            (select.DOMAIN, select.ATTR_OPTIONS, "option"),
+            (input_select.DOMAIN, input_select.ATTR_OPTIONS, OPTION),
+            (select.DOMAIN, select.ATTR_OPTIONS, OPTION),
             (humidifier.DOMAIN, humidifier.ATTR_AVAILABLE_MODES, "mode"),
             (light.DOMAIN, light.ATTR_EFFECT_LIST, "effect"),
         ):
@@ -1697,9 +1698,9 @@ class ModesTrait(_Trait):
             if media_player.ATTR_SOUND_MODE_LIST in attrs:
                 mode_settings[SOUND_MODE] = attrs.get(media_player.ATTR_SOUND_MODE)
         elif self.state.domain == input_select.DOMAIN:
-            mode_settings["option"] = self.state.state
+            mode_settings[OPTION] = self.state.state
         elif self.state.domain == select.DOMAIN:
-            mode_settings["option"] = self.state.state
+            mode_settings[OPTION] = self.state.state
         elif self.state.domain == humidifier.DOMAIN:
             if ATTR_MODE in attrs:
                 mode_settings["mode"] = attrs.get(ATTR_MODE)
@@ -1731,7 +1732,7 @@ class ModesTrait(_Trait):
             return
 
         if self.state.domain == input_select.DOMAIN:
-            option = settings["option"]
+            option = settings[OPTION]
             await self.hass.services.async_call(
                 input_select.DOMAIN,
                 input_select.SERVICE_SELECT_OPTION,
@@ -1745,7 +1746,7 @@ class ModesTrait(_Trait):
             return
 
         if self.state.domain == select.DOMAIN:
-            option = settings["option"]
+            option = settings[OPTION]
             await self.hass.services.async_call(
                 select.DOMAIN,
                 select.SERVICE_SELECT_OPTION,

@@ -174,7 +174,6 @@ TRAITS: list[type[_Trait]] = []
 FAN_SPEED_MAX_SPEED_COUNT = 5
 
 SOUND_MODE = "sound mode"
-PRESET_MODE = "preset mode"
 OPTION = "option"
 COMMAND_NOT_SUPPORTED = "Command not supported"
 
@@ -1609,7 +1608,7 @@ class ModesTrait(_Trait):
     commands = [COMMAND_MODES]
 
     SYNONYMS = {
-        PRESET_MODE: [PRESET_MODE, "mode", "preset"],
+        "preset mode": ["preset mode", "mode", "preset"],
         SOUND_MODE: [SOUND_MODE, "effects"],
         OPTION: [OPTION, "setting", "mode", "value"],
     }
@@ -1666,7 +1665,7 @@ class ModesTrait(_Trait):
         modes = []
 
         for domain, attr, name in (
-            (fan.DOMAIN, fan.ATTR_PRESET_MODES, PRESET_MODE),
+            (fan.DOMAIN, fan.ATTR_PRESET_MODES, "preset mode"),
             (media_player.DOMAIN, media_player.ATTR_SOUND_MODE_LIST, SOUND_MODE),
             (input_select.DOMAIN, input_select.ATTR_OPTIONS, OPTION),
             (select.DOMAIN, select.ATTR_OPTIONS, OPTION),
@@ -1694,7 +1693,7 @@ class ModesTrait(_Trait):
 
         if self.state.domain == fan.DOMAIN:
             if fan.ATTR_PRESET_MODES in attrs:
-                mode_settings[PRESET_MODE] = attrs.get(fan.ATTR_PRESET_MODE)
+                mode_settings["preset mode"] = attrs.get(fan.ATTR_PRESET_MODE)
         elif self.state.domain == media_player.DOMAIN:
             if media_player.ATTR_SOUND_MODE_LIST in attrs:
                 mode_settings[SOUND_MODE] = attrs.get(media_player.ATTR_SOUND_MODE)
@@ -1719,7 +1718,7 @@ class ModesTrait(_Trait):
         settings = params.get("updateModeSettings")
 
         if self.state.domain == fan.DOMAIN:
-            preset_mode = settings[PRESET_MODE]
+            preset_mode = settings["preset mode"]
             await self.hass.services.async_call(
                 fan.DOMAIN,
                 fan.SERVICE_SET_PRESET_MODE,

@@ -176,6 +176,7 @@ FAN_SPEED_MAX_SPEED_COUNT = 5
 SOUND_MODE = "sound mode"
 PRESET_MODE = "preset mode"
 OPTION = "option"
+COMMAND_NOT_SUPPORTED = "Command not supported"
 
 _TraitT = TypeVar("_TraitT", bound="_Trait")
 
@@ -2095,7 +2096,7 @@ class VolumeTrait(_Trait):
             self.state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
             & MediaPlayerEntityFeature.VOLUME_SET
         ):
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
         await self._set_volume_absolute(data, level / 100)
 
@@ -2124,7 +2125,7 @@ class VolumeTrait(_Trait):
                     context=data.context,
                 )
         else:
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
     async def _execute_mute(self, data, params):
         mute = params["mute"]
@@ -2133,7 +2134,7 @@ class VolumeTrait(_Trait):
             self.state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
             & MediaPlayerEntityFeature.VOLUME_MUTE
         ):
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
         await self.hass.services.async_call(
             media_player.DOMAIN,
@@ -2155,7 +2156,7 @@ class VolumeTrait(_Trait):
         elif command == COMMAND_MUTE:
             await self._execute_mute(data, params)
         else:
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
 
 def _verify_pin_challenge(data, state, challenge):
@@ -2290,7 +2291,7 @@ class TransportControlTrait(_Trait):
         elif command == COMMAND_MEDIA_STOP:
             service = media_player.SERVICE_MEDIA_STOP
         else:
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
         await self.hass.services.async_call(
             media_player.DOMAIN,

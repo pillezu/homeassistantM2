@@ -288,7 +288,7 @@ SERVICE_NIGHT_LIGHT_MODE_OFF = "light_night_light_mode_off"
 SERVICE_EYECARE_MODE_ON = "light_eyecare_mode_on"
 SERVICE_EYECARE_MODE_OFF = "light_eyecare_mode_off"
 
-# Light Messages
+# Light Strings
 LIGHT_ON_FAILED = "Turning the light on failed."
 
 # Remote Services
@@ -301,6 +301,15 @@ SERVICE_SET_WIFI_LED_ON = "switch_set_wifi_led_on"
 SERVICE_SET_WIFI_LED_OFF = "switch_set_wifi_led_off"
 SERVICE_SET_POWER_MODE = "switch_set_power_mode"
 SERVICE_SET_POWER_PRICE = "switch_set_power_price"
+
+# Switch Strings
+MDI_SHIMMER = "mdi:shimmer"
+IONIZER_ON_FAILED = "Turning ionizer of the miio device on failed."
+IONIZER_OFF_FAILED = "Turning ionizer of the miio device off failed."
+PLUG_ON_FAILED = "Turning the plug on failed"
+PLUG_OFF_FAILED = "Turning the plug off failed"
+GOT_NEW_STATE = "Got new state: %s"
+EXCEPTION_WHILE_FETCHING_STATE = "Got exception while fetching the state: %s"
 
 # Vacuum Services
 SERVICE_MOVE_REMOTE_CONTROL = "vacuum_remote_control_move"

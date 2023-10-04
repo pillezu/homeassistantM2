@@ -35,6 +35,7 @@ from .const import (
     CONF_FLOW_TYPE,
     CONF_GATEWAY,
     DOMAIN,
+    EXCEPTION_WHILE_FETCHING_STATE,
     FEATURE_FLAGS_AIRFRESH,
     FEATURE_FLAGS_AIRFRESH_A1,
     FEATURE_FLAGS_AIRFRESH_T2017,
@@ -71,8 +72,12 @@ from .const import (
     FEATURE_SET_LEARN_MODE,
     FEATURE_SET_LED,
     FEATURE_SET_PTC,
+    GOT_NEW_STATE,
+    IONIZER_OFF_FAILED,
+    IONIZER_ON_FAILED,
     KEY_COORDINATOR,
     KEY_DEVICE,
+    MDI_SHIMMER,
     MODEL_AIRFRESH_A1,
     MODEL_AIRFRESH_T2017,
     MODEL_AIRFRESH_VA2,
@@ -106,6 +111,8 @@ from .const import (
     MODELS_HUMIDIFIER_MJJSQ,
     MODELS_PURIFIER_MIIO,
     MODELS_PURIFIER_MIOT,
+    PLUG_OFF_FAILED,
+    PLUG_ON_FAILED,
     SERVICE_SET_POWER_MODE,
     SERVICE_SET_POWER_PRICE,
     SERVICE_SET_WIFI_LED_OFF,
@@ -278,7 +285,7 @@ SWITCH_TYPES = (
         key=ATTR_CLEAN,
         feature=FEATURE_SET_CLEAN,
         name="Clean mode",
-        icon="mdi:shimmer",
+        icon=MDI_SHIMMER,
         method_on="async_set_clean_on",
         method_off="async_set_clean_off",
         available_with_device_off=False,
@@ -314,7 +321,7 @@ SWITCH_TYPES = (
         key=ATTR_IONIZER,
         feature=FEATURE_SET_IONIZER,
         name="Ionizer",
-        icon="mdi:shimmer",
+        icon=MDI_SHIMMER,
         method_on="async_set_ionizer_on",
         method_off="async_set_ionizer_off",
         entity_category=EntityCategory.CONFIG,
@@ -323,7 +330,7 @@ SWITCH_TYPES = (
         key=ATTR_ANION,
         feature=FEATURE_SET_ANION,
         name="Ionizer",
-        icon="mdi:shimmer",
+        icon=MDI_SHIMMER,
         method_on="async_set_anion_on",
         method_off="async_set_anion_off",
         entity_category=EntityCategory.CONFIG,
@@ -697,7 +704,7 @@ class XiaomiGenericCoordinatedSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
     async def async_set_ionizer_on(self) -> bool:
         """Turn ionizer on."""
         return await self._try_command(
-            "Turning ionizer of the miio device on failed.",
+            IONIZER_ON_FAILED,
             self._device.set_ionizer,
             True,
         )
@@ -705,7 +712,7 @@ class XiaomiGenericCoordinatedSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
     async def async_set_ionizer_off(self) -> bool:
         """Turn ionizer off."""
         return await self._try_command(
-            "Turning ionizer of the miio device off failed.",
+            IONIZER_OFF_FAILED,
             self._device.set_ionizer,
             False,
         )
@@ -713,7 +720,7 @@ class XiaomiGenericCoordinatedSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
     async def async_set_anion_on(self) -> bool:
         """Turn ionizer on."""
         return await self._try_command(
-            "Turning ionizer of the miio device on failed.",
+            IONIZER_ON_FAILED,
             self._device.set_anion,
             True,
         )
@@ -721,7 +728,7 @@ class XiaomiGenericCoordinatedSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
     async def async_set_anion_off(self) -> bool:
         """Turn ionizer off."""
         return await self._try_command(
-            "Turning ionizer of the miio device off failed.",
+            IONIZER_OFF_FAILED,
             self._device.set_anion,
             False,
         )
@@ -729,7 +736,7 @@ class XiaomiGenericCoordinatedSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
     async def async_set_ptc_on(self) -> bool:
         """Turn ionizer on."""
         return await self._try_command(
-            "Turning ionizer of the miio device on failed.",
+            IONIZER_ON_FAILED,
             self._device.set_ptc,
             True,
         )
@@ -737,7 +744,7 @@ class XiaomiGenericCoordinatedSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
     async def async_set_ptc_off(self) -> bool:
         """Turn ionizer off."""
         return await self._try_command(
-            "Turning ionizer of the miio device off failed.",
+            IONIZER_OFF_FAILED,
             self._device.set_ptc,
             False,
         )
@@ -831,7 +838,7 @@ class XiaomiPlugGenericSwitch(XiaomiMiioEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the plug on."""
-        result = await self._try_command("Turning the plug on failed", self._device.on)
+        result = await self._try_command(PLUG_ON_FAILED, self._device.on)
 
         if result:
             self._state = True
@@ -839,9 +846,7 @@ class XiaomiPlugGenericSwitch(XiaomiMiioEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the plug off."""
-        result = await self._try_command(
-            "Turning the plug off failed", self._device.off
-        )
+        result = await self._try_command(PLUG_OFF_FAILED, self._device.off)
 
         if result:
             self._state = False
@@ -856,7 +861,7 @@ class XiaomiPlugGenericSwitch(XiaomiMiioEntity, SwitchEntity):
 
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(GOT_NEW_STATE, state)
 
             self._available = True
             self._state = state.is_on
@@ -865,7 +870,7 @@ class XiaomiPlugGenericSwitch(XiaomiMiioEntity, SwitchEntity):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
     async def async_set_wifi_led_on(self):
         """Turn the wifi led on."""
@@ -929,7 +934,7 @@ class XiaomiPowerStripSwitch(XiaomiPlugGenericSwitch):
 
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(GOT_NEW_STATE, state)
 
             self._available = True
             self._state = state.is_on
@@ -952,7 +957,7 @@ class XiaomiPowerStripSwitch(XiaomiPlugGenericSwitch):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
     async def async_set_power_mode(self, mode: str):
         """Set the power mode."""
@@ -988,13 +993,9 @@ class ChuangMiPlugSwitch(XiaomiPlugGenericSwitch):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn a channel on."""
         if self._channel_usb:
-            result = await self._try_command(
-                "Turning the plug on failed", self._device.usb_on
-            )
+            result = await self._try_command(PLUG_ON_FAILED, self._device.usb_on)
         else:
-            result = await self._try_command(
-                "Turning the plug on failed", self._device.on
-            )
+            result = await self._try_command(PLUG_ON_FAILED, self._device.on)
 
         if result:
             self._state = True
@@ -1003,13 +1004,9 @@ class ChuangMiPlugSwitch(XiaomiPlugGenericSwitch):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn a channel off."""
         if self._channel_usb:
-            result = await self._try_command(
-                "Turning the plug off failed", self._device.usb_off
-            )
+            result = await self._try_command(PLUG_OFF_FAILED, self._device.usb_off)
         else:
-            result = await self._try_command(
-                "Turning the plug off failed", self._device.off
-            )
+            result = await self._try_command(PLUG_OFF_FAILED, self._device.off)
 
         if result:
             self._state = False
@@ -1024,7 +1021,7 @@ class ChuangMiPlugSwitch(XiaomiPlugGenericSwitch):
 
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(GOT_NEW_STATE, state)
 
             self._available = True
             if self._channel_usb:
@@ -1043,7 +1040,7 @@ class ChuangMiPlugSwitch(XiaomiPlugGenericSwitch):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
 
 class XiaomiAirConditioningCompanionSwitch(XiaomiPlugGenericSwitch):
@@ -1084,7 +1081,7 @@ class XiaomiAirConditioningCompanionSwitch(XiaomiPlugGenericSwitch):
 
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(GOT_NEW_STATE, state)
 
             self._available = True
             self._state = state.power_socket == "on"
@@ -1093,4 +1090,4 @@ class XiaomiAirConditioningCompanionSwitch(XiaomiPlugGenericSwitch):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)

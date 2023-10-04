@@ -308,8 +308,7 @@ IONIZER_ON_FAILED = "Turning ionizer of the miio device on failed."
 IONIZER_OFF_FAILED = "Turning ionizer of the miio device off failed."
 PLUG_ON_FAILED = "Turning the plug on failed"
 PLUG_OFF_FAILED = "Turning the plug off failed"
-GOT_NEW_STATE = "Got new state: %s"
-EXCEPTION_WHILE_FETCHING_STATE = "Got exception while fetching the state: %s"
+
 
 # Vacuum Services
 SERVICE_MOVE_REMOTE_CONTROL = "vacuum_remote_control_move"
@@ -319,6 +318,10 @@ SERVICE_STOP_REMOTE_CONTROL = "vacuum_remote_control_stop"
 SERVICE_CLEAN_SEGMENT = "vacuum_clean_segment"
 SERVICE_CLEAN_ZONE = "vacuum_clean_zone"
 SERVICE_GOTO = "vacuum_goto"
+
+# General Strings
+GOT_NEW_STATE = "Got new state: %s"
+EXCEPTION_WHILE_FETCHING_STATE = "Got exception while fetching the state: %s"
 
 # Features
 FEATURE_SET_BUZZER = 1

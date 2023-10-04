@@ -13,6 +13,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     CONF_DEVICE,
     CONF_FLOW_TYPE,
+    EXCEPTION_WHILE_FETCHING_STATE,
+    GOT_NEW_STATE,
     MODEL_AIRQUALITYMONITOR_B1,
     MODEL_AIRQUALITYMONITOR_CGDN1,
     MODEL_AIRQUALITYMONITOR_S1,
@@ -58,7 +60,7 @@ class AirMonitorB1(XiaomiMiioEntity, AirQualityEntity):
         """Fetch state from the miio device."""
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(GOT_NEW_STATE, state)
             self._carbon_dioxide_equivalent = state.co2e
             self._particulate_matter_2_5 = round(state.pm25, 1)
             self._total_volatile_organic_compounds = round(state.tvoc, 3)
@@ -67,7 +69,7 @@ class AirMonitorB1(XiaomiMiioEntity, AirQualityEntity):
             self._available = True
         except DeviceException as ex:
             self._available = False
-            _LOGGER.error("Got exception while fetching the state: %s", ex)
+            _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
     @property
     def icon(self):
@@ -133,7 +135,7 @@ class AirMonitorS1(AirMonitorB1):
         """Fetch state from the miio device."""
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(GOT_NEW_STATE, state)
             self._carbon_dioxide = state.co2
             self._particulate_matter_2_5 = state.pm25
             self._total_volatile_organic_compounds = state.tvoc
@@ -143,7 +145,7 @@ class AirMonitorS1(AirMonitorB1):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
 
 class AirMonitorV1(AirMonitorB1):
@@ -153,13 +155,13 @@ class AirMonitorV1(AirMonitorB1):
         """Fetch state from the miio device."""
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(GOT_NEW_STATE, state)
             self._air_quality_index = state.aqi
             self._available = True
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
     @property
     def unit_of_measurement(self):
@@ -184,14 +186,14 @@ class AirMonitorCGDN1(XiaomiMiioEntity, AirQualityEntity):
         """Fetch state from the miio device."""
         try:
             state = await self.hass.async_add_executor_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
+            _LOGGER.debug(GOT_NEW_STATE, state)
             self._carbon_dioxide = state.co2
             self._particulate_matter_2_5 = round(state.pm25, 1)
             self._particulate_matter_10 = round(state.pm10, 1)
             self._available = True
         except DeviceException as ex:
             self._available = False
-            _LOGGER.error("Got exception while fetching the state: %s", ex)
+            _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
     @property
     def icon(self):

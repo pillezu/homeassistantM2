@@ -309,6 +309,9 @@ IONIZER_OFF_FAILED = "Turning ionizer of the miio device off failed."
 PLUG_ON_FAILED = "Turning the plug on failed"
 PLUG_OFF_FAILED = "Turning the plug off failed"
 
+#  Fan Strings
+
+
 # Button Strings
 MDI_AIR_FILTER = "mdi:air-filter"
 
@@ -324,6 +327,7 @@ SERVICE_GOTO = "vacuum_goto"
 # General Strings
 GOT_NEW_STATE = "Got new state: %s"
 EXCEPTION_WHILE_FETCHING_STATE = "Got exception while fetching the state: %s"
+NOT_VALID_PRESET_MODE = "'%s'is not a valid preset mode"
 
 # Features
 FEATURE_SET_BUZZER = 1

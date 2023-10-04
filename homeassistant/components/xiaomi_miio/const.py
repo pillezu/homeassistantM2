@@ -304,7 +304,6 @@ SERVICE_SET_POWER_MODE = "switch_set_power_mode"
 SERVICE_SET_POWER_PRICE = "switch_set_power_price"
 
 # Switch Strings
-MDI_SHIMMER = "mdi:shimmer"
 IONIZER_ON_FAILED = "Turning ionizer of the miio device on failed."
 IONIZER_OFF_FAILED = "Turning ionizer of the miio device off failed."
 PLUG_ON_FAILED = "Turning the plug on failed"
@@ -313,8 +312,13 @@ PLUG_OFF_FAILED = "Turning the plug off failed"
 # Fan Strings
 SET_FAN_SPEED_FAILED = "Setting fan speed percentage of the miio device failed."
 
-# Button Strings
+# MDIS
+MDI_FAST_FORWARD = "mdi:fast-forward"
 MDI_AIR_FILTER = "mdi:air-filter"
+MDI_SHIMMER = "mdi:shimmer"
+MDI_CLOCK_OUTLINE = "mdi:clock-outline"
+MDI_TIMER_SAND = "mdi:timer-sand"
+MDI_TEXTURE_BOX = "mdi:texture-box"
 
 # Vacuum Services
 SERVICE_MOVE_REMOTE_CONTROL = "vacuum_remote_control_move"

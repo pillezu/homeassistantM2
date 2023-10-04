@@ -310,7 +310,6 @@ PLUG_ON_FAILED = "Turning the plug on failed"
 PLUG_OFF_FAILED = "Turning the plug off failed"
 
 # Fan Strings
-SET_OPERATION_MODE_FAILED = "Setting operation mode of the miio device failed."
 SET_FAN_SPEED_FAILED = "Setting fan speed percentage of the miio device failed."
 
 # Button Strings
@@ -329,6 +328,9 @@ SERVICE_GOTO = "vacuum_goto"
 GOT_NEW_STATE = "Got new state: %s"
 EXCEPTION_WHILE_FETCHING_STATE = "Got exception while fetching the state: %s"
 NOT_VALID_PRESET_MODE = "'%s'is not a valid preset mode"
+INVALID_OPERATION_MODE = "Mode %s is not a valid operation mode"
+SET_OPERATION_MODE = "Setting the operation mode to: %s"
+SET_OPERATION_MODE_FAILED = "Setting operation mode of the miio device failed."
 
 # Features
 FEATURE_SET_BUZZER = 1

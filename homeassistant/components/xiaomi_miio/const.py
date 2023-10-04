@@ -309,8 +309,9 @@ IONIZER_OFF_FAILED = "Turning ionizer of the miio device off failed."
 PLUG_ON_FAILED = "Turning the plug on failed"
 PLUG_OFF_FAILED = "Turning the plug off failed"
 
-#  Fan Strings
-
+# Fan Strings
+SET_OPERATION_MODE_FAILED = "Setting operation mode of the miio device failed."
+SET_FAN_SPEED_FAILED = "Setting fan speed percentage of the miio device failed."
 
 # Button Strings
 MDI_AIR_FILTER = "mdi:air-filter"

@@ -91,6 +91,8 @@ from .const import (
     NOT_VALID_PRESET_MODE,
     SERVICE_RESET_FILTER,
     SERVICE_SET_EXTRA_FEATURES,
+    SET_FAN_SPEED_FAILED,
+    SET_OPERATION_MODE_FAILED,
 )
 from .device import XiaomiCoordinatedMiioEntity
 
@@ -521,7 +523,7 @@ class XiaomiAirPurifier(XiaomiGenericAirPurifier):
         )
         if speed_mode:
             await self._try_command(
-                "Setting operation mode of the miio device failed.",
+                SET_OPERATION_MODE_FAILED,
                 self._device.set_mode,
                 self.operation_mode_class(self.SPEED_MODE_MAPPING[speed_mode]),
             )
@@ -535,7 +537,7 @@ class XiaomiAirPurifier(XiaomiGenericAirPurifier):
             _LOGGER.warning(NOT_VALID_PRESET_MODE, preset_mode)
             return
         if await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_mode,
             self.operation_mode_class[preset_mode],
         ):
@@ -628,7 +630,7 @@ class XiaomiAirPurifierMB4(XiaomiGenericAirPurifier):
             _LOGGER.warning(NOT_VALID_PRESET_MODE, preset_mode)
             return
         if await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_mode,
             self.operation_mode_class[preset_mode],
         ):
@@ -708,7 +710,7 @@ class XiaomiAirFresh(XiaomiGenericAirPurifier):
         )
         if speed_mode:
             if await self._try_command(
-                "Setting operation mode of the miio device failed.",
+                SET_OPERATION_MODE_FAILED,
                 self._device.set_mode,
                 AirfreshOperationMode(self.SPEED_MODE_MAPPING[speed_mode]),
             ):
@@ -726,7 +728,7 @@ class XiaomiAirFresh(XiaomiGenericAirPurifier):
             _LOGGER.warning(NOT_VALID_PRESET_MODE, preset_mode)
             return
         if await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_mode,
             self.operation_mode_class[preset_mode],
         ):
@@ -814,7 +816,7 @@ class XiaomiAirFreshA1(XiaomiGenericAirPurifier):
             _LOGGER.warning(NOT_VALID_PRESET_MODE, preset_mode)
             return
         if await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_mode,
             self.operation_mode_class[preset_mode],
         ):
@@ -988,13 +990,13 @@ class XiaomiFan(XiaomiGenericFan):
 
         if self._nature_mode:
             await self._try_command(
-                "Setting fan speed percentage of the miio device failed.",
+                SET_FAN_SPEED_FAILED,
                 self._device.set_natural_speed,
                 percentage,
             )
         else:
             await self._try_command(
-                "Setting fan speed percentage of the miio device failed.",
+                SET_FAN_SPEED_FAILED,
                 self._device.set_direct_speed,
                 percentage,
             )
@@ -1039,7 +1041,7 @@ class XiaomiFanP5(XiaomiGenericFan):
             _LOGGER.warning(NOT_VALID_PRESET_MODE, preset_mode)
             return
         await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_mode,
             self.operation_mode_class[preset_mode],
         )
@@ -1054,7 +1056,7 @@ class XiaomiFanP5(XiaomiGenericFan):
             return
 
         await self._try_command(
-            "Setting fan speed percentage of the miio device failed.",
+            SET_FAN_SPEED_FAILED,
             self._device.set_speed,
             percentage,
         )
@@ -1098,7 +1100,7 @@ class XiaomiFanMiot(XiaomiGenericFan):
             _LOGGER.warning(NOT_VALID_PRESET_MODE, preset_mode)
             return
         await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_mode,
             self.operation_mode_class[preset_mode],
         )
@@ -1113,7 +1115,7 @@ class XiaomiFanMiot(XiaomiGenericFan):
             return
 
         result = await self._try_command(
-            "Setting fan speed percentage of the miio device failed.",
+            SET_FAN_SPEED_FAILED,
             self._device.set_speed,
             percentage,
         )
@@ -1174,7 +1176,7 @@ class XiaomiFan1C(XiaomiFanMiot):
             await self.async_turn_on()
 
         result = await self._try_command(
-            "Setting fan speed percentage of the miio device failed.",
+            SET_FAN_SPEED_FAILED,
             self._device.set_speed,
             speed,
         )

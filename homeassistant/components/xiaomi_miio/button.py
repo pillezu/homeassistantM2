@@ -19,6 +19,7 @@ from .const import (
     DOMAIN,
     KEY_COORDINATOR,
     KEY_DEVICE,
+    MDI_AIR_FILTER,
     MODEL_AIRFRESH_A1,
     MODEL_AIRFRESH_T2017,
     MODELS_VACUUM,
@@ -51,7 +52,7 @@ BUTTON_TYPES = (
     XiaomiMiioButtonDescription(
         key=ATTR_RESET_DUST_FILTER,
         name="Reset dust filter",
-        icon="mdi:air-filter",
+        icon=MDI_AIR_FILTER,
         method_press="reset_dust_filter",
         method_press_error_message="Resetting the dust filter lifetime failed",
         entity_category=EntityCategory.CONFIG,
@@ -59,7 +60,7 @@ BUTTON_TYPES = (
     XiaomiMiioButtonDescription(
         key=ATTR_RESET_UPPER_FILTER,
         name="Reset upper filter",
-        icon="mdi:air-filter",
+        icon=MDI_AIR_FILTER,
         method_press="reset_upper_filter",
         method_press_error_message="Resetting the upper filter lifetime failed.",
         entity_category=EntityCategory.CONFIG,
@@ -86,7 +87,7 @@ BUTTON_TYPES = (
     XiaomiMiioButtonDescription(
         key=ATTR_RESET_VACUUM_FILTER,
         name="Reset filter",
-        icon="mdi:air-filter",
+        icon=MDI_AIR_FILTER,
         method_press=METHOD_VACUUM_RESET_CONSUMABLE,
         method_press_params=Consumable.Filter,
         method_press_error_message="Resetting the filter lifetime failed.",

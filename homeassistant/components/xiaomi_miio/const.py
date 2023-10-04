@@ -288,6 +288,10 @@ SERVICE_NIGHT_LIGHT_MODE_OFF = "light_night_light_mode_off"
 SERVICE_EYECARE_MODE_ON = "light_eyecare_mode_on"
 SERVICE_EYECARE_MODE_OFF = "light_eyecare_mode_off"
 
+# Light Strings
+LIGHT_ON_FAILED = "Turning the light on failed."
+SET_BRIGHTNESS = "Setting brightness: %s %s%%"
+
 # Remote Services
 SERVICE_LEARN = "remote_learn_command"
 SERVICE_SET_REMOTE_LED_ON = "remote_set_led_on"
@@ -299,6 +303,23 @@ SERVICE_SET_WIFI_LED_OFF = "switch_set_wifi_led_off"
 SERVICE_SET_POWER_MODE = "switch_set_power_mode"
 SERVICE_SET_POWER_PRICE = "switch_set_power_price"
 
+# Switch Strings
+IONIZER_ON_FAILED = "Turning ionizer of the miio device on failed."
+IONIZER_OFF_FAILED = "Turning ionizer of the miio device off failed."
+PLUG_ON_FAILED = "Turning the plug on failed"
+PLUG_OFF_FAILED = "Turning the plug off failed"
+
+# Fan Strings
+SET_FAN_SPEED_FAILED = "Setting fan speed percentage of the miio device failed."
+
+# MDIS
+MDI_FAST_FORWARD = "mdi:fast-forward"
+MDI_AIR_FILTER = "mdi:air-filter"
+MDI_SHIMMER = "mdi:shimmer"
+MDI_CLOCK_OUTLINE = "mdi:clock-outline"
+MDI_TIMER_SAND = "mdi:timer-sand"
+MDI_TEXTURE_BOX = "mdi:texture-box"
+
 # Vacuum Services
 SERVICE_MOVE_REMOTE_CONTROL = "vacuum_remote_control_move"
 SERVICE_MOVE_REMOTE_CONTROL_STEP = "vacuum_remote_control_move_step"
@@ -307,6 +328,14 @@ SERVICE_STOP_REMOTE_CONTROL = "vacuum_remote_control_stop"
 SERVICE_CLEAN_SEGMENT = "vacuum_clean_segment"
 SERVICE_CLEAN_ZONE = "vacuum_clean_zone"
 SERVICE_GOTO = "vacuum_goto"
+
+# General Strings
+GOT_NEW_STATE = "Got new state: %s"
+EXCEPTION_WHILE_FETCHING_STATE = "Got exception while fetching the state: %s"
+NOT_VALID_PRESET_MODE = "'%s'is not a valid preset mode"
+INVALID_OPERATION_MODE = "Mode %s is not a valid operation mode"
+SET_OPERATION_MODE = "Setting the operation mode to: %s"
+SET_OPERATION_MODE_FAILED = "Setting operation mode of the miio device failed."
 
 # Features
 FEATURE_SET_BUZZER = 1

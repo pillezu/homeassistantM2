@@ -23,6 +23,7 @@ ATTR_ATTRIBUTE = "attribute"
 ATTR_ATTRIBUTE_ID = "attribute_id"
 ATTR_ATTRIBUTE_NAME = "attribute_name"
 ATTR_AVAILABLE = "available"
+ATTR_CHILD_LOCK = "child lock"
 ATTR_CLUSTER_ID = "cluster_id"
 ATTR_CLUSTER_TYPE = "cluster_type"
 ATTR_COMMAND_TYPE = "command_type"
@@ -207,6 +208,7 @@ DEBUG_LEVELS = {
     DEBUG_COMP_ZIGPY_XBEE: logging.DEBUG,
     DEBUG_COMP_ZIGPY_ZIGATE: logging.DEBUG,
 }
+DEBUG_TURNED_ON_LIGHT = "turned on: %s"
 DEBUG_RELAY_LOGGERS = [DEBUG_COMP_ZHA, DEBUG_COMP_ZIGPY]
 
 DEFAULT_RADIO_TYPE = "ezsp"
@@ -222,6 +224,7 @@ DOMAIN = "zha"
 GROUP_ID = "group_id"
 GROUP_IDS = "group_ids"
 GROUP_NAME = "group_name"
+GROUP_NOT_FOUND = "ZHA Group not found"
 
 MFG_CLUSTER_ID_START = 0xFC00
 

@@ -626,6 +626,68 @@ class KNXCommonFlow(ABC, FlowHandler):
             description_placeholders=description_placeholders,
         )
 
+    async def async_routing_error_check(
+        self,
+        user_input: dict,
+        errors: dict,
+        individual_address: str,
+        multicast_group: str,
+    ) -> Any:
+        """Check and handle errors during routing setup."""
+        try:
+            ia_validator(individual_address)
+        except vol.Invalid:
+            errors[CONF_KNX_INDIVIDUAL_ADDRESS] = "invalid_individual_address"
+        try:
+            ip_v4_validator(multicast_group, multicast=True)
+        except vol.Invalid:
+            errors[CONF_KNX_MCAST_GRP] = "invalid_ip_address"
+
+        if _local := user_input.get(CONF_KNX_LOCAL_IP):
+            try:
+                _local_ip = await xknx_validate_ip(_local)
+                ip_v4_validator(_local_ip, multicast=False)
+            except (vol.Invalid, XKNXException):
+                errors[CONF_KNX_LOCAL_IP] = "invalid_ip_address"
+
+        return _local
+
+    def handle_connection_type(
+        self,
+        user_input: dict,
+        _local_ip: Any,
+        _individual_address: str,
+        _multicast_group: str,
+        _multicast_port: int,
+    ) -> FlowResult:
+        """Handle the connection type during routing setup."""
+        connection_type = (
+            CONF_KNX_ROUTING_SECURE
+            if user_input[CONF_KNX_ROUTING_SECURE]
+            else CONF_KNX_ROUTING
+        )
+
+        self.new_entry_data = KNXConfigEntryData(
+            connection_type=connection_type,
+            individual_address=_individual_address,
+            multicast_group=_multicast_group,
+            multicast_port=_multicast_port,
+            local_ip=_local_ip,
+            device_authentication=None,
+            user_id=None,
+            user_password=None,
+            tunnel_endpoint_ia=None,
+        )
+
+        if connection_type == CONF_KNX_ROUTING_SECURE:
+            self.new_title = f"Secure Routing as {_individual_address}"
+            return self.async_show_menu(
+                step_id="secure_key_source",
+                menu_options=["secure_knxkeys", "secure_routing_manual"],
+            )
+        self.new_title = f"Routing as {_individual_address}"
+        return self.finish_flow()
+
     async def async_step_routing(self, user_input: dict | None = None) -> FlowResult:
         """Routing setup."""
         errors: dict = {}
@@ -646,46 +708,17 @@ class KNXCommonFlow(ABC, FlowHandler):
         )
 
         if user_input is not None:
-            try:
-                ia_validator(_individual_address)
-            except vol.Invalid:
-                errors[CONF_KNX_INDIVIDUAL_ADDRESS] = "invalid_individual_address"
-            try:
-                ip_v4_validator(_multicast_group, multicast=True)
-            except vol.Invalid:
-                errors[CONF_KNX_MCAST_GRP] = "invalid_ip_address"
-            if _local := user_input.get(CONF_KNX_LOCAL_IP):
-                try:
-                    _local_ip = await xknx_validate_ip(_local)
-                    ip_v4_validator(_local_ip, multicast=False)
-                except (vol.Invalid, XKNXException):
-                    errors[CONF_KNX_LOCAL_IP] = "invalid_ip_address"
-
+            local_ip = await self.async_routing_error_check(
+                user_input, errors, _individual_address, _multicast_group
+            )
             if not errors:
-                connection_type = (
-                    CONF_KNX_ROUTING_SECURE
-                    if user_input[CONF_KNX_ROUTING_SECURE]
-                    else CONF_KNX_ROUTING
+                return self.handle_connection_type(
+                    user_input,
+                    local_ip,
+                    _individual_address,
+                    _multicast_group,
+                    _multicast_port,
                 )
-                self.new_entry_data = KNXConfigEntryData(
-                    connection_type=connection_type,
-                    individual_address=_individual_address,
-                    multicast_group=_multicast_group,
-                    multicast_port=_multicast_port,
-                    local_ip=_local,
-                    device_authentication=None,
-                    user_id=None,
-                    user_password=None,
-                    tunnel_endpoint_ia=None,
-                )
-                if connection_type == CONF_KNX_ROUTING_SECURE:
-                    self.new_title = f"Secure Routing as {_individual_address}"
-                    return self.async_show_menu(
-                        step_id="secure_key_source",
-                        menu_options=["secure_knxkeys", "secure_routing_manual"],
-                    )
-                self.new_title = f"Routing as {_individual_address}"
-                return self.finish_flow()
 
         routers = [router for router in self._found_gateways if router.supports_routing]
         if not routers:

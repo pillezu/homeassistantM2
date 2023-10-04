@@ -29,6 +29,7 @@ from .const import (
     CONF_DEVICE,
     CONF_FLOW_TYPE,
     DOMAIN,
+    INVALID_OPERATION_MODE,
     KEY_COORDINATOR,
     KEY_DEVICE,
     MODEL_AIRHUMIDIFIER_CA1,
@@ -36,6 +37,8 @@ from .const import (
     MODEL_AIRHUMIDIFIER_CB1,
     MODELS_HUMIDIFIER_MIOT,
     MODELS_HUMIDIFIER_MJJSQ,
+    SET_OPERATION_MODE,
+    SET_OPERATION_MODE_FAILED,
 )
 from .device import XiaomiCoordinatedMiioEntity
 
@@ -276,12 +279,12 @@ class XiaomiAirHumidifier(XiaomiGenericHumidifier, HumidifierEntity):
             return
 
         if mode not in self.available_modes:
-            _LOGGER.warning("Mode %s is not a valid operation mode", mode)
+            _LOGGER.warning(INVALID_OPERATION_MODE, mode)
             return
 
-        _LOGGER.debug("Setting the operation mode to: %s", mode)
+        _LOGGER.debug(SET_OPERATION_MODE, mode)
         if await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_mode,
             AirhumidifierOperationMode[mode],
         ):
@@ -326,7 +329,7 @@ class XiaomiAirHumidifierMiot(XiaomiAirHumidifier):
 
         _LOGGER.debug("Setting the humidity to: %s", target_humidity)
         if await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_target_humidity,
             target_humidity,
         ):
@@ -353,13 +356,13 @@ class XiaomiAirHumidifierMiot(XiaomiAirHumidifier):
             return
 
         if mode not in self.REVERSE_MODE_MAPPING:
-            _LOGGER.warning("Mode %s is not a valid operation mode", mode)
+            _LOGGER.warning(INVALID_OPERATION_MODE, mode)
             return
 
-        _LOGGER.debug("Setting the operation mode to: %s", mode)
+        _LOGGER.debug(SET_OPERATION_MODE, mode)
         if self._state:
             if await self._try_command(
-                "Setting operation mode of the miio device failed.",
+                SET_OPERATION_MODE_FAILED,
                 self._device.set_mode,
                 self.REVERSE_MODE_MAPPING[mode],
             ):
@@ -401,7 +404,7 @@ class XiaomiAirHumidifierMjjsq(XiaomiAirHumidifier):
 
         _LOGGER.debug("Setting the humidity to: %s", target_humidity)
         if await self._try_command(
-            "Setting operation mode of the miio device failed.",
+            SET_OPERATION_MODE_FAILED,
             self._device.set_target_humidity,
             target_humidity,
         ):
@@ -425,13 +428,13 @@ class XiaomiAirHumidifierMjjsq(XiaomiAirHumidifier):
     async def async_set_mode(self, mode: str) -> None:
         """Set the mode of the fan."""
         if mode not in self.MODE_MAPPING:
-            _LOGGER.warning("Mode %s is not a valid operation mode", mode)
+            _LOGGER.warning(INVALID_OPERATION_MODE, mode)
             return
 
-        _LOGGER.debug("Setting the operation mode to: %s", mode)
+        _LOGGER.debug(SET_OPERATION_MODE, mode)
         if self._state:
             if await self._try_command(
-                "Setting operation mode of the miio device failed.",
+                SET_OPERATION_MODE_FAILED,
                 self._device.set_mode,
                 self.MODE_MAPPING[mode],
             ):

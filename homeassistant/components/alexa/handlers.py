@@ -1398,6 +1398,105 @@ async def async_api_set_range(
     return response
 
 
+def adjust_cover_position(
+    entity: Any,
+    range_delta: int,
+    service: Any,
+    data: dict[str, Any],
+    range_delta_default: bool,
+    response_value: int | None,
+) -> tuple[str, dict[str, Any], int | None]:
+    """Adjust cover position."""
+    range_delta = int(range_delta * 20) if range_delta_default else int(range_delta)
+    service = SERVICE_SET_COVER_POSITION
+    if not (current := entity.attributes.get(cover.ATTR_POSITION)):
+        msg = f"Unable to determine {entity.entity_id} current position"
+        raise AlexaInvalidValueError(msg)
+    position = response_value = min(100, max(0, range_delta + current))
+    if position == 100:
+        service = cover.SERVICE_OPEN_COVER
+    elif position == 0:
+        service = cover.SERVICE_CLOSE_COVER
+    else:
+        data[cover.ATTR_POSITION] = position
+    return service, data, response_value
+
+
+def adjust_cover_tilt(
+    entity: Any,
+    range_delta: int,
+    service: Any,
+    data: dict[str, Any],
+    range_delta_default: bool,
+    response_value: int | None,
+) -> tuple[str, dict[str, Any], int | None]:
+    """Adjust tilt position."""
+    range_delta = int(range_delta * 20) if range_delta_default else int(range_delta)
+    service = SERVICE_SET_COVER_TILT_POSITION
+    current = entity.attributes.get(cover.ATTR_TILT_POSITION)
+    if not current:
+        msg = f"Unable to determine {entity.entity_id} current tilt position"
+        raise AlexaInvalidValueError(msg)
+    tilt_position = response_value = min(100, max(0, range_delta + current))
+    if tilt_position == 100:
+        service = cover.SERVICE_OPEN_COVER_TILT
+    elif tilt_position == 0:
+        service = cover.SERVICE_CLOSE_COVER_TILT
+    else:
+        data[cover.ATTR_TILT_POSITION] = tilt_position
+    return service, data, response_value
+
+
+def adjust_fan_percentage(
+    entity: Any,
+    range_delta: int,
+    service: Any,
+    data: dict[str, Any],
+    range_delta_default: bool,
+    response_value: int | None,
+) -> tuple[str, dict[str, Any], int | None]:
+    """Adjust fan position."""
+    percentage_step = entity.attributes.get(fan.ATTR_PERCENTAGE_STEP) or 20
+    range_delta = (
+        int(range_delta * percentage_step) if range_delta_default else int(range_delta)
+    )
+    service = fan.SERVICE_SET_PERCENTAGE
+    if not (current := entity.attributes.get(fan.ATTR_PERCENTAGE)):
+        msg = f"Unable to determine {entity.entity_id} current fan speed"
+        raise AlexaInvalidValueError(msg)
+    percentage = response_value = min(100, max(0, range_delta + current))
+    if percentage:
+        data[fan.ATTR_PERCENTAGE] = percentage
+    else:
+        service = fan.SERVICE_TURN_OFF
+    return service, data, response_value
+
+
+def adjust_humidity_percentage(
+    entity: Any,
+    range_delta: int,
+    service: Any,
+    data: dict[str, Any],
+    range_delta_default: bool,
+    response_value: int | None,
+) -> tuple[str, dict[str, Any], int | None]:
+    """Adjust fan position."""
+    percentage_step = 5
+    range_delta = (
+        int(range_delta * percentage_step) if range_delta_default else int(range_delta)
+    )
+    service = humidifier.SERVICE_SET_HUMIDITY
+    if not (current := entity.attributes.get(humidifier.ATTR_HUMIDITY)):
+        msg = f"Unable to determine {entity.entity_id} current target humidity"
+        raise AlexaInvalidValueError(msg)
+    min_value = entity.attributes.get(humidifier.ATTR_MIN_HUMIDITY, 10)
+    max_value = entity.attributes.get(humidifier.ATTR_MAX_HUMIDITY, 90)
+    percentage = response_value = min(max_value, max(min_value, range_delta + current))
+    if percentage:
+        data[humidifier.ATTR_HUMIDITY] = percentage
+    return service, data, response_value
+
+
 @HANDLERS.register(("Alexa.RangeController", "AdjustRangeValue"))
 async def async_api_adjust_range(
     hass: ha.HomeAssistant,
@@ -1417,72 +1516,27 @@ async def async_api_adjust_range(
 
     # Cover Position
     if instance == f"{cover.DOMAIN}.{cover.ATTR_POSITION}":
-        range_delta = int(range_delta * 20) if range_delta_default else int(range_delta)
-        service = SERVICE_SET_COVER_POSITION
-        if not (current := entity.attributes.get(cover.ATTR_POSITION)):
-            msg = f"Unable to determine {entity.entity_id} current position"
-            raise AlexaInvalidValueError(msg)
-        position = response_value = min(100, max(0, range_delta + current))
-        if position == 100:
-            service = cover.SERVICE_OPEN_COVER
-        elif position == 0:
-            service = cover.SERVICE_CLOSE_COVER
-        else:
-            data[cover.ATTR_POSITION] = position
+        service, data, response_value = adjust_cover_position(
+            entity, range_delta, service, data, range_delta_default, response_value
+        )
 
     # Cover Tilt
     elif instance == f"{cover.DOMAIN}.tilt":
-        range_delta = int(range_delta * 20) if range_delta_default else int(range_delta)
-        service = SERVICE_SET_COVER_TILT_POSITION
-        current = entity.attributes.get(cover.ATTR_TILT_POSITION)
-        if not current:
-            msg = f"Unable to determine {entity.entity_id} current tilt position"
-            raise AlexaInvalidValueError(msg)
-        tilt_position = response_value = min(100, max(0, range_delta + current))
-        if tilt_position == 100:
-            service = cover.SERVICE_OPEN_COVER_TILT
-        elif tilt_position == 0:
-            service = cover.SERVICE_CLOSE_COVER_TILT
-        else:
-            data[cover.ATTR_TILT_POSITION] = tilt_position
+        service, data, response_value = adjust_cover_tilt(
+            entity, range_delta, service, data, range_delta_default, response_value
+        )
 
     # Fan speed percentage
     elif instance == f"{fan.DOMAIN}.{fan.ATTR_PERCENTAGE}":
-        percentage_step = entity.attributes.get(fan.ATTR_PERCENTAGE_STEP) or 20
-        range_delta = (
-            int(range_delta * percentage_step)
-            if range_delta_default
-            else int(range_delta)
+        service, data, response_value = adjust_fan_percentage(
+            entity, range_delta, service, data, range_delta_default, response_value
         )
-        service = fan.SERVICE_SET_PERCENTAGE
-        if not (current := entity.attributes.get(fan.ATTR_PERCENTAGE)):
-            msg = f"Unable to determine {entity.entity_id} current fan speed"
-            raise AlexaInvalidValueError(msg)
-        percentage = response_value = min(100, max(0, range_delta + current))
-        if percentage:
-            data[fan.ATTR_PERCENTAGE] = percentage
-        else:
-            service = fan.SERVICE_TURN_OFF
 
     # Humidifier target humidity
     elif instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_HUMIDITY}":
-        percentage_step = 5
-        range_delta = (
-            int(range_delta * percentage_step)
-            if range_delta_default
-            else int(range_delta)
+        service, data, response_value = adjust_humidity_percentage(
+            entity, range_delta, service, data, range_delta_default, response_value
         )
-        service = humidifier.SERVICE_SET_HUMIDITY
-        if not (current := entity.attributes.get(humidifier.ATTR_HUMIDITY)):
-            msg = f"Unable to determine {entity.entity_id} current target humidity"
-            raise AlexaInvalidValueError(msg)
-        min_value = entity.attributes.get(humidifier.ATTR_MIN_HUMIDITY, 10)
-        max_value = entity.attributes.get(humidifier.ATTR_MAX_HUMIDITY, 90)
-        percentage = response_value = min(
-            max_value, max(min_value, range_delta + current)
-        )
-        if percentage:
-            data[humidifier.ATTR_HUMIDITY] = percentage
 
     # Input Number Value
     elif instance == f"{input_number.DOMAIN}.{input_number.ATTR_VALUE}":

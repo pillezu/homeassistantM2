@@ -309,6 +309,8 @@ IONIZER_OFF_FAILED = "Turning ionizer of the miio device off failed."
 PLUG_ON_FAILED = "Turning the plug on failed"
 PLUG_OFF_FAILED = "Turning the plug off failed"
 
+# Button Strings
+MDI_AIR_FILTER = "mdi:air-filter"
 
 # Vacuum Services
 SERVICE_MOVE_REMOTE_CONTROL = "vacuum_remote_control_move"

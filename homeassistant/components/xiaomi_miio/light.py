@@ -46,6 +46,7 @@ from .const import (
     CONF_GATEWAY,
     DOMAIN,
     KEY_COORDINATOR,
+    LIGHT_ON_FAILED,
     MODELS_LIGHT_BULB,
     MODELS_LIGHT_CEILING,
     MODELS_LIGHT_EYECARE,
@@ -314,7 +315,7 @@ class XiaomiPhilipsAbstractLight(XiaomiMiioEntity, LightEntity):
             if result:
                 self._brightness = brightness
         else:
-            await self._try_command("Turning the light on failed.", self._device.on)
+            await self._try_command(LIGHT_ON_FAILED, self._device.on)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
@@ -499,7 +500,7 @@ class XiaomiPhilipsBulb(XiaomiPhilipsGenericLight):
                 self._brightness = brightness
 
         else:
-            await self._try_command("Turning the light on failed.", self._device.on)
+            await self._try_command(LIGHT_ON_FAILED, self._device.on)
 
     async def async_update(self) -> None:
         """Fetch state from the device."""
@@ -909,7 +910,7 @@ class XiaomiPhilipsMoonlightLamp(XiaomiPhilipsBulb):
                 self._brightness = brightness
 
         else:
-            await self._try_command("Turning the light on failed.", self._device.on)
+            await self._try_command(LIGHT_ON_FAILED, self._device.on)
 
     async def async_update(self) -> None:
         """Fetch state from the device."""

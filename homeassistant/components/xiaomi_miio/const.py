@@ -288,6 +288,9 @@ SERVICE_NIGHT_LIGHT_MODE_OFF = "light_night_light_mode_off"
 SERVICE_EYECARE_MODE_ON = "light_eyecare_mode_on"
 SERVICE_EYECARE_MODE_OFF = "light_eyecare_mode_off"
 
+# Light Messages
+LIGHT_ON_FAILED = "Turning the light on failed."
+
 # Remote Services
 SERVICE_LEARN = "remote_learn_command"
 SERVICE_SET_REMOTE_LED_ON = "remote_set_led_on"

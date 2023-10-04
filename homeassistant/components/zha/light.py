@@ -48,6 +48,7 @@ from .core.const import (
     CONF_ENABLE_LIGHT_TRANSITIONING_FLAG,
     CONF_GROUP_MEMBERS_ASSUME_STATE,
     DATA_ZHA,
+    DEBUG_TURNED_ON_LIGHT,
     SIGNAL_ADD_ENTITIES,
     SIGNAL_ATTR_UPDATED,
     SIGNAL_SET_LEVEL,
@@ -289,8 +290,6 @@ class BaseLight(LogMixin, light.LightEntity):
 
         t_log = {}
 
-        TURNED_ON_DEBUG = "turned on: %s"
-
         if new_color_provided_while_off:
             # If the light is currently off, we first need to turn it on at a low
             # brightness level with no transition.
@@ -306,7 +305,7 @@ class BaseLight(LogMixin, light.LightEntity):
                 # the flag can be unset immediately
                 if set_transition_flag and not self._transition_listener:
                     self.async_transition_complete()
-                self.debug(TURNED_ON_DEBUG, t_log)
+                self.debug(DEBUG_TURNED_ON_LIGHT, t_log)
                 return
             # Currently only setting it to "on", as the correct level state will
             # be set at the second move_to_level call
@@ -327,7 +326,7 @@ class BaseLight(LogMixin, light.LightEntity):
                 # the flag can be unset immediately
                 if set_transition_flag and not self._transition_listener:
                     self.async_transition_complete()
-                self.debug(TURNED_ON_DEBUG, t_log)
+                self.debug(DEBUG_TURNED_ON_LIGHT, t_log)
                 return
 
         if (
@@ -345,7 +344,7 @@ class BaseLight(LogMixin, light.LightEntity):
                 # isn't running from a previous call, the flag can be unset immediately
                 if set_transition_flag and not self._transition_listener:
                     self.async_transition_complete()
-                self.debug(TURNED_ON_DEBUG, t_log)
+                self.debug(DEBUG_TURNED_ON_LIGHT, t_log)
                 return
             self._attr_state = bool(level)
             if level:
@@ -366,7 +365,7 @@ class BaseLight(LogMixin, light.LightEntity):
                 # (for FORCE_ON lights), we start the timer to unset the flag after
                 # the transition_time if necessary.
                 self.async_transition_start_timer(transition_time)
-                self.debug(TURNED_ON_DEBUG, t_log)
+                self.debug(DEBUG_TURNED_ON_LIGHT, t_log)
                 return
             self._attr_state = True
 
@@ -383,7 +382,7 @@ class BaseLight(LogMixin, light.LightEntity):
                 # Color calls failed, but as brightness may still transition,
                 # we start the timer to unset the flag
                 self.async_transition_start_timer(transition_time)
-                self.debug(TURNED_ON_DEBUG, t_log)
+                self.debug(DEBUG_TURNED_ON_LIGHT, t_log)
                 return
 
         if new_color_provided_while_off:
@@ -394,7 +393,7 @@ class BaseLight(LogMixin, light.LightEntity):
             )
             t_log["move_to_level_if_color"] = result
             if result[1] is not Status.SUCCESS:
-                self.debug(TURNED_ON_DEBUG, t_log)
+                self.debug(DEBUG_TURNED_ON_LIGHT, t_log)
                 return
             self._attr_state = bool(level)
             if level:
@@ -442,7 +441,7 @@ class BaseLight(LogMixin, light.LightEntity):
 
         self._off_with_transition = False
         self._off_brightness = None
-        self.debug(TURNED_ON_DEBUG, t_log)
+        self.debug(DEBUG_TURNED_ON_LIGHT, t_log)
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:

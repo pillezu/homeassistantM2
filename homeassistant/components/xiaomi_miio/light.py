@@ -45,6 +45,8 @@ from .const import (
     CONF_FLOW_TYPE,
     CONF_GATEWAY,
     DOMAIN,
+    EXCEPTION_WHILE_FETCHING_STATE,
+    GOT_NEW_STATE,
     KEY_COORDINATOR,
     LIGHT_ON_FAILED,
     MODELS_LIGHT_BULB,
@@ -60,6 +62,7 @@ from .const import (
     SERVICE_REMINDER_ON,
     SERVICE_SET_DELAYED_TURN_OFF,
     SERVICE_SET_SCENE,
+    SET_BRIGHTNESS,
 )
 from .device import XiaomiMiioEntity
 from .gateway import XiaomiGatewayDevice
@@ -304,7 +307,7 @@ class XiaomiPhilipsAbstractLight(XiaomiMiioEntity, LightEntity):
             brightness = kwargs[ATTR_BRIGHTNESS]
             percent_brightness = ceil(100 * brightness / 255.0)
 
-            _LOGGER.debug("Setting brightness: %s %s%%", brightness, percent_brightness)
+            _LOGGER.debug(SET_BRIGHTNESS, brightness, percent_brightness)
 
             result = await self._try_command(
                 "Setting brightness failed: %s",
@@ -328,11 +331,11 @@ class XiaomiPhilipsAbstractLight(XiaomiMiioEntity, LightEntity):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
             return
 
-        _LOGGER.debug("Got new state: %s", state)
+        _LOGGER.debug(GOT_NEW_STATE, state)
         self._available = True
         self._state = state.is_on
         self._brightness = ceil((255 / 100.0) * state.brightness)
@@ -354,11 +357,11 @@ class XiaomiPhilipsGenericLight(XiaomiPhilipsAbstractLight):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
             return
 
-        _LOGGER.debug("Got new state: %s", state)
+        _LOGGER.debug(GOT_NEW_STATE, state)
         self._available = True
         self._state = state.is_on
         self._brightness = ceil((255 / 100.0) * state.brightness)
@@ -488,7 +491,7 @@ class XiaomiPhilipsBulb(XiaomiPhilipsGenericLight):
             brightness = kwargs[ATTR_BRIGHTNESS]
             percent_brightness = ceil(100 * brightness / 255.0)
 
-            _LOGGER.debug("Setting brightness: %s %s%%", brightness, percent_brightness)
+            _LOGGER.debug(SET_BRIGHTNESS, brightness, percent_brightness)
 
             result = await self._try_command(
                 "Setting brightness failed: %s",
@@ -509,11 +512,11 @@ class XiaomiPhilipsBulb(XiaomiPhilipsGenericLight):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
             return
 
-        _LOGGER.debug("Got new state: %s", state)
+        _LOGGER.debug(GOT_NEW_STATE, state)
         self._available = True
         self._state = state.is_on
         self._brightness = ceil((255 / 100.0) * state.brightness)
@@ -568,11 +571,11 @@ class XiaomiPhilipsCeilingLamp(XiaomiPhilipsBulb):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
             return
 
-        _LOGGER.debug("Got new state: %s", state)
+        _LOGGER.debug(GOT_NEW_STATE, state)
         self._available = True
         self._state = state.is_on
         self._brightness = ceil((255 / 100.0) * state.brightness)
@@ -614,11 +617,11 @@ class XiaomiPhilipsEyecareLamp(XiaomiPhilipsGenericLight):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
             return
 
-        _LOGGER.debug("Got new state: %s", state)
+        _LOGGER.debug(GOT_NEW_STATE, state)
         self._available = True
         self._state = state.is_on
         self._brightness = ceil((255 / 100.0) * state.brightness)
@@ -757,11 +760,11 @@ class XiaomiPhilipsEyecareLampAmbientLight(XiaomiPhilipsAbstractLight):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
             return
 
-        _LOGGER.debug("Got new state: %s", state)
+        _LOGGER.debug(GOT_NEW_STATE, state)
         self._available = True
         self._state = state.ambient
         self._brightness = ceil((255 / 100.0) * state.ambient_brightness)
@@ -898,7 +901,7 @@ class XiaomiPhilipsMoonlightLamp(XiaomiPhilipsBulb):
             brightness = kwargs[ATTR_BRIGHTNESS]
             percent_brightness = ceil(100 * brightness / 255.0)
 
-            _LOGGER.debug("Setting brightness: %s %s%%", brightness, percent_brightness)
+            _LOGGER.debug(SET_BRIGHTNESS, brightness, percent_brightness)
 
             result = await self._try_command(
                 "Setting brightness failed: %s",
@@ -919,11 +922,11 @@ class XiaomiPhilipsMoonlightLamp(XiaomiPhilipsBulb):
         except DeviceException as ex:
             if self._available:
                 self._available = False
-                _LOGGER.error("Got exception while fetching the state: %s", ex)
+                _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
 
             return
 
-        _LOGGER.debug("Got new state: %s", state)
+        _LOGGER.debug(GOT_NEW_STATE, state)
         self._available = True
         self._state = state.is_on
         self._brightness = ceil((255 / 100.0) * state.brightness)

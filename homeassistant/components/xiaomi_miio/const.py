@@ -290,6 +290,7 @@ SERVICE_EYECARE_MODE_OFF = "light_eyecare_mode_off"
 
 # Light Strings
 LIGHT_ON_FAILED = "Turning the light on failed."
+SET_BRIGHTNESS = "Setting brightness: %s %s%%"
 
 # Remote Services
 SERVICE_LEARN = "remote_learn_command"

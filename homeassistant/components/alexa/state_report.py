@@ -357,35 +357,13 @@ async def async_send_changereport_message(
     }
 
     message = AlexaResponse(name="ChangeReport", namespace="Alexa", payload=payload)
-    message.set_endpoint_full(token, endpoint)
 
-    message_serialized = message.serialize()
-    session = async_get_clientsession(hass)
+    response_payload = await get_response(
+        message, token, endpoint, hass, config, headers, alexa_entity
+    )
 
-    assert config.endpoint is not None
-    try:
-        async with timeout(DEFAULT_TIMEOUT):
-            response = await session.post(
-                config.endpoint,
-                headers=headers,
-                json=message_serialized,
-                allow_redirects=True,
-            )
-
-    except (asyncio.TimeoutError, aiohttp.ClientError):
-        _LOGGER.error("Timeout sending report to Alexa for %s", alexa_entity.entity_id)
+    if response_payload is None:
         return
-
-    response_text = await response.text()
-
-    _LOGGER.debug("Sent: %s", json.dumps(message_serialized))
-    _LOGGER.debug("Received (%s): %s", response.status, response_text)
-
-    if response.status == HTTPStatus.ACCEPTED:
-        return
-
-    response_json = json_loads_object(response_text)
-    response_payload = cast(JsonObjectType, response_json["payload"])
 
     if response_payload["code"] == "INVALID_ACCESS_TOKEN_EXCEPTION":
         if invalidate_access_token:
@@ -510,6 +488,32 @@ async def async_send_doorbell_event_message(
         },
     )
 
+    response_payload = await get_response(
+        message, token, endpoint, hass, config, headers, alexa_entity
+    )
+
+    if response_payload is None:
+        return
+
+    _LOGGER.error(
+        "Error when sending DoorbellPress event for %s to Alexa: %s: %s",
+        alexa_entity.entity_id,
+        response_payload["code"],
+        response_payload["description"],
+    )
+
+
+async def get_response(
+    message: AlexaResponse,
+    token: str | None,
+    endpoint: str,
+    hass: HomeAssistant,
+    config: AbstractConfig,
+    headers: dict[str, Any],
+    alexa_entity: AlexaEntity,
+) -> JsonObjectType | None:
+    """Get error response, if there is one."""
+
     message.set_endpoint_full(token, endpoint)
 
     message_serialized = message.serialize()
@@ -527,7 +531,7 @@ async def async_send_doorbell_event_message(
 
     except (asyncio.TimeoutError, aiohttp.ClientError):
         _LOGGER.error("Timeout sending report to Alexa for %s", alexa_entity.entity_id)
-        return
+        return None
 
     response_text = await response.text()
 
@@ -535,14 +539,9 @@ async def async_send_doorbell_event_message(
     _LOGGER.debug("Received (%s): %s", response.status, response_text)
 
     if response.status == HTTPStatus.ACCEPTED:
-        return
+        return None
 
     response_json = json_loads_object(response_text)
     response_payload = cast(JsonObjectType, response_json["payload"])
 
-    _LOGGER.error(
-        "Error when sending DoorbellPress event for %s to Alexa: %s: %s",
-        alexa_entity.entity_id,
-        response_payload["code"],
-        response_payload["description"],
-    )
+    return response_payload

@@ -59,6 +59,7 @@ from .core.const import (
     GROUP_ID,
     GROUP_IDS,
     GROUP_NAME,
+    GROUP_NOT_FOUND,
     MFG_CLUSTER_ID_START,
     WARNING_DEVICE_MODE_EMERGENCY,
     WARNING_DEVICE_SOUND_HIGH,
@@ -464,7 +465,7 @@ async def websocket_get_group(
     if not (zha_group := zha_gateway.groups.get(group_id)):
         connection.send_message(
             websocket_api.error_message(
-                msg[ID], websocket_api.const.ERR_NOT_FOUND, "ZHA Group not found"
+                msg[ID], websocket_api.const.ERR_NOT_FOUND, GROUP_NOT_FOUND
             )
         )
         return
@@ -542,7 +543,7 @@ async def websocket_add_group_members(
     if not (zha_group := zha_gateway.groups.get(group_id)):
         connection.send_message(
             websocket_api.error_message(
-                msg[ID], websocket_api.const.ERR_NOT_FOUND, "ZHA Group not found"
+                msg[ID], websocket_api.const.ERR_NOT_FOUND, GROUP_NOT_FOUND
             )
         )
         return
@@ -572,7 +573,7 @@ async def websocket_remove_group_members(
     if not (zha_group := zha_gateway.groups.get(group_id)):
         connection.send_message(
             websocket_api.error_message(
-                msg[ID], websocket_api.const.ERR_NOT_FOUND, "ZHA Group not found"
+                msg[ID], websocket_api.const.ERR_NOT_FOUND, GROUP_NOT_FOUND
             )
         )
         return

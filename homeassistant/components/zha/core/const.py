@@ -223,6 +223,7 @@ DOMAIN = "zha"
 GROUP_ID = "group_id"
 GROUP_IDS = "group_ids"
 GROUP_NAME = "group_name"
+GROUP_NOT_FOUND = "ZHA Group not found"
 
 MFG_CLUSTER_ID_START = 0xFC00
 

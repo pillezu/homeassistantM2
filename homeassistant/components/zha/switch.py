@@ -17,6 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .core import discovery
 from .core.const import (
+    ATTR_CHILD_LOCK,
     CLUSTER_HANDLER_BASIC,
     CLUSTER_HANDLER_INOVELLI,
     CLUSTER_HANDLER_ON_OFF,
@@ -326,7 +327,7 @@ class ChildLock(ZHASwitchConfigurationEntity, id_suffix="child_lock"):
     """ZHA BinarySensor."""
 
     _zcl_attribute: str = "child_lock"
-    _attr_name = "Child lock"
+    _attr_name = ATTR_CHILD_LOCK
 
 
 @CONFIG_DIAGNOSTIC_MATCH(
@@ -487,7 +488,7 @@ class AqaraPetFeederChildLock(ZHASwitchConfigurationEntity, id_suffix="child_loc
     """Representation of a child lock configuration entity."""
 
     _zcl_attribute: str = "child_lock"
-    _attr_name = "Child lock"
+    _attr_name = ATTR_CHILD_LOCK
     _attr_icon: str = "mdi:account-lock"
 
 
@@ -499,7 +500,7 @@ class TuyaChildLockSwitch(ZHASwitchConfigurationEntity, id_suffix="child_lock"):
     """Representation of a child lock configuration entity."""
 
     _zcl_attribute: str = "child_lock"
-    _attr_name = "Child lock"
+    _attr_name = ATTR_CHILD_LOCK
     _attr_icon: str = "mdi:account-lock"
 
 
@@ -534,7 +535,7 @@ class AqaraThermostatChildLock(ZHASwitchConfigurationEntity, id_suffix="child_lo
     """Representation of an Aqara thermostat child lock configuration entity."""
 
     _zcl_attribute: str = "child_lock"
-    _attr_name = "Child lock"
+    _attr_name = ATTR_CHILD_LOCK
     _attr_icon: str = "mdi:account-lock"
 
 

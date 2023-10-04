@@ -1122,7 +1122,6 @@ class TemperatureSettingTrait(_Trait):
 
         elif command == COMMAND_THERMOSTAT_SET_MODE:
             target_mode = params["thermostatMode"]
-            supported = self.state.attributes.get(ATTR_SUPPORTED_FEATURES)
 
             if target_mode == "on":
                 await self.hass.services.async_call(

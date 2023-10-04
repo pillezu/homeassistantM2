@@ -169,11 +169,14 @@ COMMAND_SELECT_CHANNEL = f"{PREFIX_COMMANDS}selectChannel"
 COMMAND_LOCATE = f"{PREFIX_COMMANDS}Locate"
 COMMAND_CHARGE = f"{PREFIX_COMMANDS}Charge"
 
-PRESET_MODE_CONSTANT = "preset mode"
-
 TRAITS: list[type[_Trait]] = []
 
 FAN_SPEED_MAX_SPEED_COUNT = 5
+
+PRESET_MODE = "preset mode"
+SOUND_MODE = "sound mode"
+OPTION = "option"
+COMMAND_NOT_SUPPORTED = "Command not supported"
 
 _TraitT = TypeVar("_TraitT", bound="_Trait")
 
@@ -1606,9 +1609,9 @@ class ModesTrait(_Trait):
     commands = [COMMAND_MODES]
 
     SYNONYMS = {
-        PRESET_MODE_CONSTANT: [PRESET_MODE_CONSTANT, "mode", "preset"],
-        "sound mode": ["sound mode", "effects"],
-        "option": ["option", "setting", "mode", "value"],
+        PRESET_MODE: [PRESET_MODE, "mode", "preset"],
+        SOUND_MODE: [SOUND_MODE, "effects"],
+        OPTION: [OPTION, "setting", "mode", "value"],
     }
 
     @staticmethod
@@ -1663,10 +1666,10 @@ class ModesTrait(_Trait):
         modes = []
 
         for domain, attr, name in (
-            (fan.DOMAIN, fan.ATTR_PRESET_MODES, PRESET_MODE_CONSTANT),
-            (media_player.DOMAIN, media_player.ATTR_SOUND_MODE_LIST, "sound mode"),
-            (input_select.DOMAIN, input_select.ATTR_OPTIONS, "option"),
-            (select.DOMAIN, select.ATTR_OPTIONS, "option"),
+            (fan.DOMAIN, fan.ATTR_PRESET_MODES, PRESET_MODE),
+            (media_player.DOMAIN, media_player.ATTR_SOUND_MODE_LIST, SOUND_MODE),
+            (input_select.DOMAIN, input_select.ATTR_OPTIONS, OPTION),
+            (select.DOMAIN, select.ATTR_OPTIONS, OPTION),
             (humidifier.DOMAIN, humidifier.ATTR_AVAILABLE_MODES, "mode"),
             (light.DOMAIN, light.ATTR_EFFECT_LIST, "effect"),
         ):
@@ -1691,14 +1694,14 @@ class ModesTrait(_Trait):
 
         if self.state.domain == fan.DOMAIN:
             if fan.ATTR_PRESET_MODES in attrs:
-                mode_settings[PRESET_MODE_CONSTANT] = attrs.get(fan.ATTR_PRESET_MODE)
+                mode_settings[PRESET_MODE] = attrs.get(fan.ATTR_PRESET_MODE)
         elif self.state.domain == media_player.DOMAIN:
             if media_player.ATTR_SOUND_MODE_LIST in attrs:
-                mode_settings["sound mode"] = attrs.get(media_player.ATTR_SOUND_MODE)
+                mode_settings[SOUND_MODE] = attrs.get(media_player.ATTR_SOUND_MODE)
         elif self.state.domain == input_select.DOMAIN:
-            mode_settings["option"] = self.state.state
+            mode_settings[OPTION] = self.state.state
         elif self.state.domain == select.DOMAIN:
-            mode_settings["option"] = self.state.state
+            mode_settings[OPTION] = self.state.state
         elif self.state.domain == humidifier.DOMAIN:
             if ATTR_MODE in attrs:
                 mode_settings["mode"] = attrs.get(ATTR_MODE)
@@ -1716,7 +1719,7 @@ class ModesTrait(_Trait):
         settings = params.get("updateModeSettings")
 
         if self.state.domain == fan.DOMAIN:
-            preset_mode = settings[PRESET_MODE_CONSTANT]
+            preset_mode = settings[PRESET_MODE]
             await self.hass.services.async_call(
                 fan.DOMAIN,
                 fan.SERVICE_SET_PRESET_MODE,
@@ -1730,7 +1733,7 @@ class ModesTrait(_Trait):
             return
 
         if self.state.domain == input_select.DOMAIN:
-            option = settings["option"]
+            option = settings[OPTION]
             await self.hass.services.async_call(
                 input_select.DOMAIN,
                 input_select.SERVICE_SELECT_OPTION,
@@ -1744,7 +1747,7 @@ class ModesTrait(_Trait):
             return
 
         if self.state.domain == select.DOMAIN:
-            option = settings["option"]
+            option = settings[OPTION]
             await self.hass.services.async_call(
                 select.DOMAIN,
                 select.SERVICE_SELECT_OPTION,
@@ -1786,7 +1789,7 @@ class ModesTrait(_Trait):
             return
 
         if self.state.domain == media_player.DOMAIN and (
-            sound_mode := settings.get("sound mode")
+            sound_mode := settings.get(SOUND_MODE)
         ):
             await self.hass.services.async_call(
                 media_player.DOMAIN,
@@ -2093,7 +2096,7 @@ class VolumeTrait(_Trait):
             self.state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
             & MediaPlayerEntityFeature.VOLUME_SET
         ):
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
         await self._set_volume_absolute(data, level / 100)
 
@@ -2122,7 +2125,7 @@ class VolumeTrait(_Trait):
                     context=data.context,
                 )
         else:
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
     async def _execute_mute(self, data, params):
         mute = params["mute"]
@@ -2131,7 +2134,7 @@ class VolumeTrait(_Trait):
             self.state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
             & MediaPlayerEntityFeature.VOLUME_MUTE
         ):
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
         await self.hass.services.async_call(
             media_player.DOMAIN,
@@ -2153,7 +2156,7 @@ class VolumeTrait(_Trait):
         elif command == COMMAND_MUTE:
             await self._execute_mute(data, params)
         else:
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
 
 def _verify_pin_challenge(data, state, challenge):
@@ -2288,7 +2291,7 @@ class TransportControlTrait(_Trait):
         elif command == COMMAND_MEDIA_STOP:
             service = media_player.SERVICE_MEDIA_STOP
         else:
-            raise SmartHomeError(ERR_NOT_SUPPORTED, "Command not supported")
+            raise SmartHomeError(ERR_NOT_SUPPORTED, COMMAND_NOT_SUPPORTED)
 
         await self.hass.services.async_call(
             media_player.DOMAIN,

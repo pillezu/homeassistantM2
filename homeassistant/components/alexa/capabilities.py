@@ -1616,9 +1616,7 @@ class AlexaRangeController(AlexaCapability):
         # Fan speed percentage
         if self.instance == f"{fan.DOMAIN}.{fan.ATTR_PERCENTAGE}":
             supported = self.entity.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
-            if supported and fan.FanEntityFeature.SET_SPEED:
-                return self.entity.attributes.get(fan.ATTR_PERCENTAGE)
-            return 100 if self.entity.state == fan.STATE_ON else 0
+            return self.get_fan_speed(supported=supported)
 
         # Humidifier target humidity
         if self.instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_HUMIDITY}":
@@ -1645,6 +1643,12 @@ class AlexaRangeController(AlexaCapability):
                 return speed_index
 
         return None
+
+    def get_fan_speed(self, supported: Any) -> Any | int | None:
+        """Get fan speed percentage if applicable, else get if it on or off."""
+        if supported and fan.FanEntityFeature.SET_SPEED:
+            return self.entity.attributes.get(fan.ATTR_PERCENTAGE)
+        return 100 if self.entity.state == fan.STATE_ON else 0
 
     def configuration(self) -> dict[str, Any] | None:
         """Return configuration with presetResources."""

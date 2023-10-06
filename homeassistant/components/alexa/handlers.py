@@ -1143,38 +1143,18 @@ async def async_api_set_mode(
     elif instance == f"{fan.DOMAIN}.{fan.ATTR_PRESET_MODE}":
         preset_mode = mode.split(".")[1]
         preset_modes: list[str] | None = entity.attributes.get(fan.ATTR_PRESET_MODES)
-        if (
-            preset_mode != PRESET_MODE_NA
-            and preset_modes
-            and preset_mode in preset_modes
-        ):
-            service = fan.SERVICE_SET_PRESET_MODE
-            data[fan.ATTR_PRESET_MODE] = preset_mode
-        else:
-            msg = f"Entity '{entity.entity_id}' does not support Preset '{preset_mode}'"
-            raise AlexaInvalidValueError(msg)
+        service, data = get_fan_preset_mode(preset_mode, preset_modes, data, entity)
 
     # Humidifier mode
     elif instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_MODE}":
         mode = mode.split(".")[1]
         modes: list[str] | None = entity.attributes.get(humidifier.ATTR_AVAILABLE_MODES)
-        if mode != PRESET_MODE_NA and modes and mode in modes:
-            service = humidifier.SERVICE_SET_MODE
-            data[humidifier.ATTR_MODE] = mode
-        else:
-            msg = f"Entity '{entity.entity_id}' does not support Mode '{mode}'"
-            raise AlexaInvalidValueError(msg)
+        service, data = get_humidifier_mode(mode, modes, data, entity)
 
     # Cover Position
     elif instance == f"{cover.DOMAIN}.{cover.ATTR_POSITION}":
         position = mode.split(".")[1]
-
-        if position == cover.STATE_CLOSED:
-            service = cover.SERVICE_CLOSE_COVER
-        elif position == cover.STATE_OPEN:
-            service = cover.SERVICE_OPEN_COVER
-        elif position == "custom":
-            service = cover.SERVICE_STOP_COVER
+        service = get_cover_service(position)
 
     if not service:
         raise AlexaInvalidDirectiveError(DIRECTIVE_NOT_SUPPORTED)
@@ -1194,6 +1174,41 @@ async def async_api_set_mode(
     )
 
     return response
+
+
+def get_fan_preset_mode(
+    preset_mode: Any, preset_modes: list[str] | None, data: dict[str, Any], entity: Any
+) -> Any:
+    """Get service and data for fan preset mode."""
+    if preset_mode != PRESET_MODE_NA and preset_modes and preset_mode in preset_modes:
+        service = fan.SERVICE_SET_PRESET_MODE
+        data[fan.ATTR_PRESET_MODE] = preset_mode
+        return service, data
+    msg = f"Entity '{entity.entity_id}' does not support Preset '{preset_mode}'"
+    raise AlexaInvalidValueError(msg)
+
+
+def get_humidifier_mode(
+    mode: Any, modes: list[str] | None, data: Any, entity: Any
+) -> Any:
+    """Get service and data for humidifer mode."""
+    if mode != PRESET_MODE_NA and modes and mode in modes:
+        service = humidifier.SERVICE_SET_MODE
+        data[humidifier.ATTR_MODE] = mode
+        return service, data
+    msg = f"Entity '{entity.entity_id}' does not support Mode '{mode}'"
+    raise AlexaInvalidValueError(msg)
+
+
+def get_cover_service(position: Any) -> Any:
+    """Get service for cover position."""
+    if position == cover.STATE_CLOSED:
+        service = cover.SERVICE_CLOSE_COVER
+    elif position == cover.STATE_OPEN:
+        service = cover.SERVICE_OPEN_COVER
+    elif position == "custom":
+        service = cover.SERVICE_STOP_COVER
+    return service
 
 
 @HANDLERS.register(("Alexa.ModeController", "AdjustMode"))

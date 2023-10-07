@@ -946,10 +946,6 @@ class XiaomiPhilipsMoonlightLamp(XiaomiPhilipsBulb):
             }
         )
 
-    async def async_set_delayed_turn_off(self, time_period: timedelta):
-        """Set delayed turn off. Unsupported."""
-        return
-
 
 class XiaomiGatewayLight(LightEntity):
     """Representation of a gateway device's light."""

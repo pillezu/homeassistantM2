@@ -708,16 +708,15 @@ class XiaomiAirFresh(XiaomiGenericAirPurifier):
         speed_mode = math.ceil(
             percentage_to_ranged_value((1, self._speed_count), percentage)
         )
-        if speed_mode:
-            if await self._try_command(
-                SET_OPERATION_MODE_FAILED,
-                self._device.set_mode,
-                AirfreshOperationMode(self.SPEED_MODE_MAPPING[speed_mode]),
-            ):
-                self._mode = AirfreshOperationMode(
-                    self.SPEED_MODE_MAPPING[speed_mode]
-                ).value
-                self.async_write_ha_state()
+        if speed_mode and await self._try_command(
+            SET_OPERATION_MODE_FAILED,
+            self._device.set_mode,
+            AirfreshOperationMode(self.SPEED_MODE_MAPPING[speed_mode]),
+        ):
+            self._mode = AirfreshOperationMode(
+                self.SPEED_MODE_MAPPING[speed_mode]
+            ).value
+            self.async_write_ha_state()
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode of the fan.
@@ -1184,3 +1183,4 @@ class XiaomiFan1C(XiaomiFanMiot):
         if result:
             self._percentage = ranged_value_to_percentage((1, self._speed_count), speed)
             self.async_write_ha_state()
+

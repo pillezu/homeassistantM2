@@ -1325,37 +1325,17 @@ async def async_api_set_range(
     # Cover Position
     if instance == f"{cover.DOMAIN}.{cover.ATTR_POSITION}":
         range_value = int(range_value)
-        if range_value == 0:
-            service = cover.SERVICE_CLOSE_COVER
-        elif range_value == 100:
-            service = cover.SERVICE_OPEN_COVER
-        else:
-            service = cover.SERVICE_SET_COVER_POSITION
-            data[cover.ATTR_POSITION] = range_value
+        service, data = get_cover_position_service(range_value, service, data)
 
     # Cover Tilt
     elif instance == f"{cover.DOMAIN}.tilt":
         range_value = int(range_value)
-        if range_value == 0:
-            service = cover.SERVICE_CLOSE_COVER_TILT
-        elif range_value == 100:
-            service = cover.SERVICE_OPEN_COVER_TILT
-        else:
-            service = cover.SERVICE_SET_COVER_TILT_POSITION
-            data[cover.ATTR_TILT_POSITION] = range_value
+        service, data = get_cover_tilt_service(range_value, service, data)
 
     # Fan Speed
     elif instance == f"{fan.DOMAIN}.{fan.ATTR_PERCENTAGE}":
         range_value = int(range_value)
-        if range_value == 0:
-            service = fan.SERVICE_TURN_OFF
-        else:
-            supported = entity.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
-            if supported and fan.FanEntityFeature.SET_SPEED:
-                service = fan.SERVICE_SET_PERCENTAGE
-                data[fan.ATTR_PERCENTAGE] = range_value
-            else:
-                service = fan.SERVICE_TURN_ON
+        service, data = get_fan_speed_service(range_value, service, data, entity)
 
     # Humidifier target humidity
     elif instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_HUMIDITY}":
@@ -1411,6 +1391,51 @@ async def async_api_set_range(
     )
 
     return response
+
+
+def get_fan_speed_service(
+    range_value: int, service: Any, data: dict[str, Any], entity: Any
+) -> tuple[str, dict[str, Any]]:
+    """Get service and data for fan speed."""
+    if range_value == 0:
+        service = fan.SERVICE_TURN_OFF
+    else:
+        supported = entity.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
+        if supported and fan.FanEntityFeature.SET_SPEED:
+            service = fan.SERVICE_SET_PERCENTAGE
+            data[fan.ATTR_PERCENTAGE] = range_value
+        else:
+            service = fan.SERVICE_TURN_ON
+        return service, data
+    return service, data
+
+
+def get_cover_tilt_service(
+    range_value: int, service: Any, data: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
+    """Get service and data for cover tilt."""
+    if range_value == 0:
+        service = cover.SERVICE_CLOSE_COVER_TILT
+    elif range_value == 100:
+        service = cover.SERVICE_OPEN_COVER_TILT
+    else:
+        service = cover.SERVICE_SET_COVER_TILT_POSITION
+        data[cover.ATTR_TILT_POSITION] = range_value
+    return service, data
+
+
+def get_cover_position_service(
+    range_value: int, service: Any, data: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
+    """Get service and data for cover position."""
+    if range_value == 0:
+        service = cover.SERVICE_CLOSE_COVER
+    elif range_value == 100:
+        service = cover.SERVICE_OPEN_COVER
+    else:
+        service = cover.SERVICE_SET_COVER_POSITION
+        data[cover.ATTR_POSITION] = range_value
+    return service, data
 
 
 def adjust_cover_position(

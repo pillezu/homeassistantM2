@@ -758,11 +758,11 @@ class StartStopTrait(_Trait):
         """Execute a StartStop command."""
         domain = self.state.domain
         if domain == vacuum.DOMAIN:
-            return await self._execute_vacuum(command, data, params, challenge)
+            return await self._execute_vacuum(command, data, params)
         if domain == cover.DOMAIN:
-            return await self._execute_cover(command, data, params, challenge)
+            return await self._execute_cover(command, data, params)
 
-    async def _execute_vacuum(self, command, data, params, challenge):
+    async def _execute_vacuum(self, command, data, params):
         """Execute a StartStop command."""
         if command == COMMAND_STARTSTOP:
             if params["start"]:
@@ -799,7 +799,7 @@ class StartStopTrait(_Trait):
                     context=data.context,
                 )
 
-    async def _execute_cover(self, command, data, params, challenge):
+    async def _execute_cover(self, command, data, params):
         """Execute a StartStop command."""
         if command == COMMAND_STARTSTOP:
             if params["start"] is False:
@@ -1593,7 +1593,7 @@ class FanSpeedTrait(_Trait):
                 context=data.context,
             )
 
-    async def execute_reverse(self, data, params):
+    async def execute_reverse(self, data):
         """Execute a Reverse command."""
         if self.state.domain == fan.DOMAIN:
             if self.state.attributes.get(fan.ATTR_DIRECTION) == fan.DIRECTION_FORWARD:
@@ -1614,7 +1614,7 @@ class FanSpeedTrait(_Trait):
         if command == COMMAND_FANSPEED:
             await self.execute_fanspeed(data, params)
         elif command == COMMAND_REVERSE:
-            await self.execute_reverse(data, params)
+            await self.execute_reverse(data)
 
 
 @register_trait

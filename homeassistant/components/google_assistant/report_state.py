@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import deque
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from homeassistant.const import MATCH_ALL
 from homeassistant.core import CALLBACK_TYPE, HassJob, HomeAssistant, callback
@@ -24,6 +24,105 @@ REPORT_STATE_WINDOW = 1
 _LOGGER = logging.getLogger(__name__)
 
 
+async def async_report_states(
+    hass: HomeAssistant,
+    google_config: AbstractConfig,
+    report_states_job,
+    pending: deque[dict[str, Any]],
+    unsub_pending: CALLBACK_TYPE | None,
+) -> tuple[deque[dict[str, Any]], CALLBACK_TYPE | None]:
+    """Report the states."""
+
+    pending.append({})
+
+    # We will report all batches except last one because those are finalized.
+    while len(pending) > 1:
+        await google_config.async_report_state_all(
+            {"devices": {"states": pending.popleft()}}
+        )
+
+    # If things got queued up in last batch while we were reporting, schedule ourselves again
+    if pending[0]:
+        unsub_pending = async_call_later(hass, REPORT_STATE_WINDOW, report_states_job)
+    else:
+        unsub_pending = None
+    return pending, unsub_pending
+
+
+async def entity_state_listener(
+    hass: HomeAssistant,
+    new_state: Any,
+    google_config: AbstractConfig,
+    changed_entity: Any,
+    pending: deque[dict[str, Any]],
+    unsub_pending: CALLBACK_TYPE | None,
+    checker: Any,
+    report_states_job: HassJob,
+) -> tuple[Optional[deque[dict[str, Any]]], Optional[CALLBACK_TYPE | None]] | None:
+    """Entity state listener."""
+    if not hass.is_running:
+        return None
+
+    if not new_state:
+        return None
+
+    if not google_config.should_expose(new_state):
+        return None
+
+    entity = GoogleEntity(hass, google_config, new_state)
+
+    if not entity.is_supported():
+        return None
+
+    try:
+        entity_data = entity.query_serialize()
+    except SmartHomeError as err:
+        _LOGGER.debug("Not reporting state for %s: %s", changed_entity, err.code)
+        return None
+
+    if not checker.async_is_significant_change(new_state, extra_arg=entity_data):
+        return None
+
+    _LOGGER.debug("Scheduling report state for %s: %s", changed_entity, entity_data)
+
+    # If a significant change is already scheduled and we have another significant one,
+    # let's create a new batch of changes
+    if changed_entity in pending[-1]:
+        pending.append({})
+
+    pending[-1][changed_entity] = entity_data
+
+    if unsub_pending is None:
+        unsub_pending = async_call_later(hass, REPORT_STATE_WINDOW, report_states_job)
+
+    return pending, unsub_pending
+
+
+async def process_entities(
+    hass: HomeAssistant,
+    google_config: AbstractConfig,
+    checker: Any,
+) -> dict:
+    """Process entities."""
+    entities = {}
+    for entity in async_get_entities(hass, google_config):
+        if not entity.should_expose():
+            continue
+
+        try:
+            entity_data = entity.query_serialize()
+        except SmartHomeError:
+            continue
+
+        # Tell our significant change checker that we're reporting
+        # So it knows with subsequent changes what was already reported.
+        if not checker.async_is_significant_change(entity.state, extra_arg=entity_data):
+            continue
+
+        entities[entity.entity_id] = entity_data
+    return entities
+
+
 @callback
 def async_enable_report_state(hass: HomeAssistant, google_config: AbstractConfig):
     """Enable state reporting."""
@@ -32,67 +131,32 @@ def async_enable_report_state(hass: HomeAssistant, google_config: AbstractConfig
     pending: deque[dict[str, Any]] = deque([{}])
 
     async def report_states(now=None):
-        """Report the states."""
         nonlocal pending
         nonlocal unsub_pending
+        pending, unsub_pending = await async_report_states(
+            hass, google_config, report_states_job, pending, unsub_pending
+        )
 
-        pending.append({})
-
-        # We will report all batches except last one because those are finalized.
-        while len(pending) > 1:
-            await google_config.async_report_state_all(
-                {"devices": {"states": pending.popleft()}}
-            )
-
-        # If things got queued up in last batch while we were reporting, schedule ourselves again
-        if pending[0]:
-            unsub_pending = async_call_later(
-                hass, REPORT_STATE_WINDOW, report_states_job
-            )
-        else:
-            unsub_pending = None
-
-    report_states_job = HassJob(report_states)
+    report_states_job = HassJob(
+        report_states,
+    )
 
     async def async_entity_state_listener(changed_entity, old_state, new_state):
+        nonlocal pending
         nonlocal unsub_pending
+        result = await entity_state_listener(
+            hass,
+            new_state,
+            google_config,
+            changed_entity,
+            pending,
+            unsub_pending,
+            checker,
+            report_states_job,
+        )
 
-        if not hass.is_running:
-            return
-
-        if not new_state:
-            return
-
-        if not google_config.should_expose(new_state):
-            return
-
-        entity = GoogleEntity(hass, google_config, new_state)
-
-        if not entity.is_supported():
-            return
-
-        try:
-            entity_data = entity.query_serialize()
-        except SmartHomeError as err:
-            _LOGGER.debug("Not reporting state for %s: %s", changed_entity, err.code)
-            return
-
-        if not checker.async_is_significant_change(new_state, extra_arg=entity_data):
-            return
-
-        _LOGGER.debug("Scheduling report state for %s: %s", changed_entity, entity_data)
-
-        # If a significant change is already scheduled and we have another significant one,
-        # let's create a new batch of changes
-        if changed_entity in pending[-1]:
-            pending.append({})
-
-        pending[-1][changed_entity] = entity_data
-
-        if unsub_pending is None:
-            unsub_pending = async_call_later(
-                hass, REPORT_STATE_WINDOW, report_states_job
-            )
+        if result is not None:
+            pending, unsub_pending = result
 
     @callback
     def extra_significant_check(
@@ -110,27 +174,10 @@ def async_enable_report_state(hass: HomeAssistant, google_config: AbstractConfig
     async def initial_report(_now):
         """Report initially all states."""
         nonlocal unsub, checker
-        entities = {}
 
         checker = await create_checker(hass, DOMAIN, extra_significant_check)
 
-        for entity in async_get_entities(hass, google_config):
-            if not entity.should_expose():
-                continue
-
-            try:
-                entity_data = entity.query_serialize()
-            except SmartHomeError:
-                continue
-
-            # Tell our significant change checker that we're reporting
-            # So it knows with subsequent changes what was already reported.
-            if not checker.async_is_significant_change(
-                entity.state, extra_arg=entity_data
-            ):
-                continue
-
-            entities[entity.entity_id] = entity_data
+        entities = await process_entities(hass, google_config, checker)
 
         if not entities:
             return

@@ -1397,27 +1397,35 @@ class ArmDisArmTrait(_Trait):
             response.update({"currentArmLevel": armed_state})
         return response
 
+    def arm_or_disarm_security_system(
+        self, params: Any, challenge: Any, data: Any
+    ) -> str:
+        """Arms or disarm security system."""
+        if not (arm_level := params.get("armLevel")):
+            states = self._supported_states()
+
+            if STATE_ALARM_TRIGGERED in states:
+                states.remove(STATE_ALARM_TRIGGERED)
+
+            if len(states) != 1:
+                raise SmartHomeError(ERR_NOT_SUPPORTED, "ArmLevel missing")
+
+            arm_level = states[0]
+
+        if self.state.state == arm_level:
+            raise SmartHomeError(ERR_ALREADY_ARMED, "System is already armed")
+        if self.state.attributes["code_arm_required"]:
+            _verify_pin_challenge(data, self.state, challenge)
+        service = self.state_to_service[arm_level]
+        return service
+
     async def execute(self, command, data, params, challenge):
         """Execute an ArmDisarm command."""
         if params["arm"] and not params.get("cancel"):
             # If no arm level given, we can only arm it if there is
             # only one supported arm type. We never default to triggered.
-            if not (arm_level := params.get("armLevel")):
-                states = self._supported_states()
 
-                if STATE_ALARM_TRIGGERED in states:
-                    states.remove(STATE_ALARM_TRIGGERED)
-
-                if len(states) != 1:
-                    raise SmartHomeError(ERR_NOT_SUPPORTED, "ArmLevel missing")
-
-                arm_level = states[0]
-
-            if self.state.state == arm_level:
-                raise SmartHomeError(ERR_ALREADY_ARMED, "System is already armed")
-            if self.state.attributes["code_arm_required"]:
-                _verify_pin_challenge(data, self.state, challenge)
-            service = self.state_to_service[arm_level]
+            service = self.arm_or_disarm_security_system(params, challenge, data)
         # disarm the system without asking for code when
         # 'cancel' arming action is received while current status is pending
         elif (

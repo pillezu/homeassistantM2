@@ -490,7 +490,7 @@ def handle_ac_partner(
         _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
 
         if model in ["chuangmi.plug.v1", "chuangmi.plug.v3", "chuangmi.plug.hmi208"]:
-            plug = ChuangmiPlug(host, token, model=model)
+            plug: Any = ChuangmiPlug(host, token, model=model)
 
             # The device has two switchable channels (mains and a USB port).
             # A switch device per channel will be created.

@@ -407,33 +407,85 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
     name = config_entry.title
     model = config_entry.data[CONF_MODEL]
     unique_id = config_entry.unique_id
+
     if config_entry.data[CONF_FLOW_TYPE] == CONF_GATEWAY:
-        gateway = hass.data[DOMAIN][config_entry.entry_id][CONF_GATEWAY]
-        # Gateway sub devices
-        sub_devices = gateway.devices
-        for sub_device in sub_devices.values():
-            if sub_device.device_type != "Switch":
-                continue
-            coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR][
-                sub_device.sid
-            ]
-            switch_variables = set(sub_device.status) & set(GATEWAY_SWITCH_VARS)
-            if switch_variables:
-                entities.extend(
-                    [
-                        XiaomiGatewaySwitch(
-                            coordinator, sub_device, config_entry, variable
-                        )
-                        for variable in switch_variables
-                    ]
-                )
+        entities.extend(handle_conf_gateway(hass, config_entry))
 
     if config_entry.data[CONF_FLOW_TYPE] == CONF_DEVICE or (
         config_entry.data[CONF_FLOW_TYPE] == CONF_GATEWAY
         and model == "lumi.acpartner.v3"
     ):
-        if DATA_KEY not in hass.data:
-            hass.data[DATA_KEY] = {}
+        handle_ac_partner(hass, config_entry, host, token, name, model, unique_id)
+
+        async def async_service_handler(service: ServiceCall) -> None:
+            await handle_service_handler(hass, service)
+
+        for plug_service, method in SERVICE_TO_METHOD.items():
+            schema = method.get("schema", SERVICE_SCHEMA)
+            hass.services.async_register(
+                DOMAIN, plug_service, async_service_handler, schema=schema
+            )
+
+    async_add_entities(entities)
+
+
+async def handle_service_handler(hass: HomeAssistant, service: ServiceCall) -> None:
+    """Map services to methods on XiaomiPlugGenericSwitch."""
+    method = SERVICE_TO_METHOD[service.service]
+    params = {
+        key: value for key, value in service.data.items() if key != ATTR_ENTITY_ID
+    }
+    if entity_ids := service.data.get(ATTR_ENTITY_ID):
+        devices = [
+            device
+            for device in hass.data[DATA_KEY].values()
+            if device.entity_id in entity_ids
+        ]
+    else:
+        devices = hass.data[DATA_KEY].values()
+
+    update_tasks = []
+    for device in devices:
+        if not hasattr(device, method["method"]):
+            continue
+        await getattr(device, method["method"])(**params)
+        update_tasks.append(asyncio.create_task(device.async_update_ha_state(True)))
+
+    if update_tasks:
+        await asyncio.wait(update_tasks)
+
+
+def handle_conf_gateway(hass: HomeAssistant, config_entry) -> list:
+    """Handle conf gateway case."""
+    entities = []
+    gateway = hass.data[DOMAIN][config_entry.entry_id][CONF_GATEWAY]
+    # Gateway sub devices
+    sub_devices = gateway.devices
+    for sub_device in sub_devices.values():
+        if sub_device.device_type != "Switch":
+            continue
+        coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR][
+            sub_device.sid
+        ]
+        switch_variables = set(sub_device.status) & set(GATEWAY_SWITCH_VARS)
+        if switch_variables:
+            entities.extend(
+                [
+                    XiaomiGatewaySwitch(coordinator, sub_device, config_entry, variable)
+                    for variable in switch_variables
+                ]
+            )
+    return entities
+
+
+def handle_ac_partner(
+    hass: HomeAssistant, config_entry, host, token, name, model, unique_id
+) -> list:
+    """Handle ac partner case."""
+    entities = []
+
+    if DATA_KEY not in hass.data:
+        hass.data[DATA_KEY] = {}
 
         _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
 
@@ -447,7 +499,7 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
                     unique_id_ch = f"{unique_id}-USB"
                 else:
                     unique_id_ch = f"{unique_id}-mains"
-                device = ChuangMiPlugSwitch(
+                device: Any = ChuangMiPlugSwitch(
                     name, plug, config_entry, unique_id_ch, channel_usb
                 )
                 entities.append(device)
@@ -485,42 +537,7 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
                 model,
             )
 
-        async def async_service_handler(service: ServiceCall) -> None:
-            """Map services to methods on XiaomiPlugGenericSwitch."""
-            method = SERVICE_TO_METHOD[service.service]
-            params = {
-                key: value
-                for key, value in service.data.items()
-                if key != ATTR_ENTITY_ID
-            }
-            if entity_ids := service.data.get(ATTR_ENTITY_ID):
-                devices = [
-                    device
-                    for device in hass.data[DATA_KEY].values()
-                    if device.entity_id in entity_ids
-                ]
-            else:
-                devices = hass.data[DATA_KEY].values()
-
-            update_tasks = []
-            for device in devices:
-                if not hasattr(device, method["method"]):
-                    continue
-                await getattr(device, method["method"])(**params)
-                update_tasks.append(
-                    asyncio.create_task(device.async_update_ha_state(True))
-                )
-
-            if update_tasks:
-                await asyncio.wait(update_tasks)
-
-        for plug_service, method in SERVICE_TO_METHOD.items():
-            schema = method.get("schema", SERVICE_SCHEMA)
-            hass.services.async_register(
-                DOMAIN, plug_service, async_service_handler, schema=schema
-            )
-
-    async_add_entities(entities)
+    return entities
 
 
 class XiaomiGenericCoordinatedSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):

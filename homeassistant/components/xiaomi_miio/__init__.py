@@ -299,30 +299,13 @@ def _async_update_data_vacuum(
     return update_async
 
 
-async def async_create_miio_device_and_coordinator(
-    hass: HomeAssistant, entry: ConfigEntry
-) -> None:
-    """Set up a data coordinator and one miio device to service multiple entities."""
-    model: str = entry.data[CONF_MODEL]
-    host = entry.data[CONF_HOST]
-    token = entry.data[CONF_TOKEN]
-    name = entry.title
+def get_device(model: str, host, token):
+    """Get device."""
     device: MiioDevice | None = None
     migrate = False
     lazy_discover = False
     update_method = _async_update_data_default
     coordinator_class: type[DataUpdateCoordinator[Any]] = DataUpdateCoordinator
-
-    if (
-        model not in MODELS_HUMIDIFIER
-        and model not in MODELS_FAN
-        and model not in MODELS_VACUUM
-        and not model.startswith(ROBOROCK_GENERIC)
-        and not model.startswith(ROCKROBO_GENERIC)
-    ):
-        return
-
-    _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
 
     # Humidifiers
     if model in MODELS_HUMIDIFIER_MIOT:
@@ -336,6 +319,7 @@ async def async_create_miio_device_and_coordinator(
     elif model in MODELS_HUMIDIFIER_MIIO:
         device = AirHumidifier(host, token, lazy_discover=lazy_discover, model=model)
         migrate = True
+
     # Airpurifiers and Airfresh
     elif model in MODELS_PURIFIER_MIOT:
         device = AirPurifierMiot(host, token, lazy_discover=lazy_discover)
@@ -356,6 +340,7 @@ async def async_create_miio_device_and_coordinator(
         device = RoborockVacuum(host, token)
         update_method = _async_update_data_vacuum
         coordinator_class = DataUpdateCoordinator[VacuumCoordinatorData]
+
     # Pedestal fans
     elif model in MODEL_TO_CLASS_MAP:
         device = MODEL_TO_CLASS_MAP[model](host, token, lazy_discover=lazy_discover)
@@ -371,6 +356,31 @@ async def async_create_miio_device_and_coordinator(
             model,
         )
         return
+
+    return device, migrate, update_method, coordinator_class
+
+
+async def async_create_miio_device_and_coordinator(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> None:
+    """Set up a data coordinator and one miio device to service multiple entities."""
+    model: str = entry.data[CONF_MODEL]
+    host = entry.data[CONF_HOST]
+    token = entry.data[CONF_TOKEN]
+    name = entry.title
+
+    if (
+        model not in MODELS_HUMIDIFIER
+        and model not in MODELS_FAN
+        and model not in MODELS_VACUUM
+        and not model.startswith(ROBOROCK_GENERIC)
+        and not model.startswith(ROCKROBO_GENERIC)
+    ):
+        return
+
+    _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
+
+    device, migrate, update_method, coordinator_class = get_device(model, host, token)
 
     if migrate:
         # Removing fan platform entity for humidifiers and migrate the name

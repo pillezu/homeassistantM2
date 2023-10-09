@@ -285,6 +285,29 @@ FAVORITE_LEVEL_VALUES = {
 }
 
 
+def update_description(
+    description: XiaomiMiioNumberDescription, model
+) -> XiaomiMiioNumberDescription:
+    """Update description."""
+    if description.key == ATTR_OSCILLATION_ANGLE and model in OSCILLATION_ANGLE_VALUES:
+        description = dataclasses.replace(
+            description,
+            native_max_value=OSCILLATION_ANGLE_VALUES[model].max_value,
+            native_min_value=OSCILLATION_ANGLE_VALUES[model].min_value,
+            native_step=OSCILLATION_ANGLE_VALUES[model].step,
+        )
+    elif description.key == ATTR_FAVORITE_LEVEL:
+        for list_models, favorite_level_value in FAVORITE_LEVEL_VALUES.items():
+            if model in list_models:
+                description = dataclasses.replace(
+                    description,
+                    native_max_value=favorite_level_value.max_value,
+                    native_min_value=favorite_level_value.min_value,
+                    native_step=favorite_level_value.step,
+                )
+    return description
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -317,25 +340,7 @@ async def async_setup_entry(
                 entity_reg.async_remove(entity_id)
             continue
         if feature & features:
-            if (
-                description.key == ATTR_OSCILLATION_ANGLE
-                and model in OSCILLATION_ANGLE_VALUES
-            ):
-                description = dataclasses.replace(
-                    description,
-                    native_max_value=OSCILLATION_ANGLE_VALUES[model].max_value,
-                    native_min_value=OSCILLATION_ANGLE_VALUES[model].min_value,
-                    native_step=OSCILLATION_ANGLE_VALUES[model].step,
-                )
-            elif description.key == ATTR_FAVORITE_LEVEL:
-                for list_models, favorite_level_value in FAVORITE_LEVEL_VALUES.items():
-                    if model in list_models:
-                        description = dataclasses.replace(
-                            description,
-                            native_max_value=favorite_level_value.max_value,
-                            native_min_value=favorite_level_value.min_value,
-                            native_step=favorite_level_value.step,
-                        )
+            description = update_description(description, model)
 
             entities.append(
                 XiaomiNumberEntity(

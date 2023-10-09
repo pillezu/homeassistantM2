@@ -72,6 +72,7 @@ async def async_setup_platform(
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     """Set up the Xiaomi IR Remote (Chuangmi IR) platform."""
+    del discovery_info
     host = config[CONF_HOST]
     token = config[CONF_TOKEN]
 

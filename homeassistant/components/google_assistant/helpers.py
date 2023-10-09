@@ -645,6 +645,15 @@ class GoogleEntity:
         if not device_entry:
             return device
 
+        device_info = self.get_device_info(device_entry)
+
+        if device_info:
+            device["deviceInfo"] = device_info
+
+        return device
+
+    def get_device_info(self, device_entry) -> dict:
+        """Get device info."""
         device_info = {}
 
         if device_entry.manufacturer:
@@ -653,11 +662,7 @@ class GoogleEntity:
             device_info["model"] = device_entry.model
         if device_entry.sw_version:
             device_info["swVersion"] = device_entry.sw_version
-
-        if device_info:
-            device["deviceInfo"] = device_info
-
-        return device
+        return device_info
 
     @callback
     def query_serialize(self):

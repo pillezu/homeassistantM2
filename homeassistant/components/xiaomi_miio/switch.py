@@ -418,33 +418,7 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
         handle_ac_partner(hass, config_entry, host, token, name, model, unique_id)
 
         async def async_service_handler(service: ServiceCall) -> None:
-            """Map services to methods on XiaomiPlugGenericSwitch."""
-            method = SERVICE_TO_METHOD[service.service]
-            params = {
-                key: value
-                for key, value in service.data.items()
-                if key != ATTR_ENTITY_ID
-            }
-            if entity_ids := service.data.get(ATTR_ENTITY_ID):
-                devices = [
-                    device
-                    for device in hass.data[DATA_KEY].values()
-                    if device.entity_id in entity_ids
-                ]
-            else:
-                devices = hass.data[DATA_KEY].values()
-
-            update_tasks = []
-            for device in devices:
-                if not hasattr(device, method["method"]):
-                    continue
-                await getattr(device, method["method"])(**params)
-                update_tasks.append(
-                    asyncio.create_task(device.async_update_ha_state(True))
-                )
-
-            if update_tasks:
-                await asyncio.wait(update_tasks)
+            await handle_service_handler(hass, service)
 
         for plug_service, method in SERVICE_TO_METHOD.items():
             schema = method.get("schema", SERVICE_SCHEMA)
@@ -455,8 +429,34 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
     async_add_entities(entities)
 
 
-def handle_conf_gateway(hass, config_entry) -> []:
-    """Handle conf gateway case"""
+async def handle_service_handler(hass: HomeAssistant, service: ServiceCall) -> None:
+    """Map services to methods on XiaomiPlugGenericSwitch."""
+    method = SERVICE_TO_METHOD[service.service]
+    params = {
+        key: value for key, value in service.data.items() if key != ATTR_ENTITY_ID
+    }
+    if entity_ids := service.data.get(ATTR_ENTITY_ID):
+        devices = [
+            device
+            for device in hass.data[DATA_KEY].values()
+            if device.entity_id in entity_ids
+        ]
+    else:
+        devices = hass.data[DATA_KEY].values()
+
+    update_tasks = []
+    for device in devices:
+        if not hasattr(device, method["method"]):
+            continue
+        await getattr(device, method["method"])(**params)
+        update_tasks.append(asyncio.create_task(device.async_update_ha_state(True)))
+
+    if update_tasks:
+        await asyncio.wait(update_tasks)
+
+
+def handle_conf_gateway(hass: HomeAssistant, config_entry) -> list:
+    """Handle conf gateway case."""
     entities = []
     gateway = hass.data[DOMAIN][config_entry.entry_id][CONF_GATEWAY]
     # Gateway sub devices
@@ -478,8 +478,10 @@ def handle_conf_gateway(hass, config_entry) -> []:
     return entities
 
 
-def handle_ac_partner(hass, config_entry, host, token, name, model, unique_id) -> []:
-    """Handle ac partner case"""
+def handle_ac_partner(
+    hass: HomeAssistant, config_entry, host, token, name, model, unique_id
+) -> list:
+    """Handle ac partner case."""
     entities = []
 
     if DATA_KEY not in hass.data:
@@ -497,7 +499,7 @@ def handle_ac_partner(hass, config_entry, host, token, name, model, unique_id) -
                     unique_id_ch = f"{unique_id}-USB"
                 else:
                     unique_id_ch = f"{unique_id}-mains"
-                device = ChuangMiPlugSwitch(
+                device: Any = ChuangMiPlugSwitch(
                     name, plug, config_entry, unique_id_ch, channel_usb
                 )
                 entities.append(device)
@@ -1106,3 +1108,4 @@ class XiaomiAirConditioningCompanionSwitch(XiaomiPlugGenericSwitch):
             if self._available:
                 self._available = False
                 _LOGGER.error(EXCEPTION_WHILE_FETCHING_STATE, ex)
+

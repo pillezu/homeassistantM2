@@ -178,7 +178,7 @@ class AbstractConfig(ABC):
     def should_expose(self, state) -> bool:
         """Return if entity should be exposed."""
 
-    def should_2fa(self, state):
+    def should_2fa():
         """If an entity should have 2FA checked."""
         return True
 
@@ -570,7 +570,7 @@ class GoogleEntity:
     @callback
     def might_2fa(self) -> bool:
         """Return if the entity might encounter 2FA."""
-        if not self.config.should_2fa(self.state):
+        if not self.config.should_2fa():
             return False
 
         return self.might_2fa_traits()

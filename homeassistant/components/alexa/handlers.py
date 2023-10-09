@@ -79,6 +79,7 @@ from .errors import (
 from .state_report import AlexaDirective, AlexaResponse, async_enable_proactive_mode
 
 ALEXA_THERMOSTAT_CONTROLLER = "Alexa.ThermostatController"
+ALEXA_SECURITY_PANEL_CONTROLLER = "Alexa.SecurityPanelController"
 
 _LOGGER = logging.getLogger(__name__)
 DIRECTIVE_NOT_SUPPORTED = "Entity does not support directive"
@@ -797,7 +798,7 @@ def temperature_from_object(
     return TemperatureConverter.convert(temp, from_unit, to_unit)
 
 
-@HANDLERS.register(("Alexa.ThermostatController", "SetTargetTemperature"))
+@HANDLERS.register((ALEXA_THERMOSTAT_CONTROLLER, "SetTargetTemperature"))
 async def async_api_set_target_temp(
     hass: ha.HomeAssistant,
     config: AbstractConfig,
@@ -862,7 +863,7 @@ async def async_api_set_target_temp(
     return response
 
 
-@HANDLERS.register(("Alexa.ThermostatController", "AdjustTargetTemperature"))
+@HANDLERS.register((ALEXA_THERMOSTAT_CONTROLLER, "AdjustTargetTemperature"))
 async def async_api_adjust_target_temp(
     hass: ha.HomeAssistant,
     config: AbstractConfig,
@@ -945,7 +946,7 @@ async def async_api_adjust_target_temp(
     return response
 
 
-@HANDLERS.register(("Alexa.ThermostatController", "SetThermostatMode"))
+@HANDLERS.register((ALEXA_THERMOSTAT_CONTROLLER, "SetThermostatMode"))
 async def async_api_set_thermostat_mode(
     hass: ha.HomeAssistant,
     config: AbstractConfig,
@@ -1030,7 +1031,7 @@ async def async_api_reportstate(
     return directive.response(name="StateReport")
 
 
-@HANDLERS.register(("Alexa.SecurityPanelController", "Arm"))
+@HANDLERS.register((ALEXA_SECURITY_PANEL_CONTROLLER, "Arm"))
 async def async_api_arm(
     hass: ha.HomeAssistant,
     config: AbstractConfig,
@@ -1064,13 +1065,13 @@ async def async_api_arm(
     payload: dict[str, Any] = {"exitDelayInSeconds": 0}
 
     response = directive.response(
-        name="Arm.Response", namespace="Alexa.SecurityPanelController", payload=payload
+        name="Arm.Response", namespace=ALEXA_SECURITY_PANEL_CONTROLLER, payload=payload
     )
 
     response.add_context_property(
         {
             "name": "armState",
-            "namespace": "Alexa.SecurityPanelController",
+            "namespace": ALEXA_SECURITY_PANEL_CONTROLLER,
             "value": arm_state,
         }
     )
@@ -1078,7 +1079,7 @@ async def async_api_arm(
     return response
 
 
-@HANDLERS.register(("Alexa.SecurityPanelController", "Disarm"))
+@HANDLERS.register((ALEXA_SECURITY_PANEL_CONTROLLER, "Disarm"))
 async def async_api_disarm(
     hass: ha.HomeAssistant,
     config: AbstractConfig,
@@ -1109,7 +1110,7 @@ async def async_api_disarm(
     response.add_context_property(
         {
             "name": "armState",
-            "namespace": "Alexa.SecurityPanelController",
+            "namespace": ALEXA_SECURITY_PANEL_CONTROLLER,
             "value": "DISARMED",
         }
     )

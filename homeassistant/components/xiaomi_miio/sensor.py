@@ -1,11 +1,10 @@
 """Support for Xiaomi Mi Air Quality Monitor (PM2.5) and Humidifier."""
 from __future__ import annotations
 
-from collections.abc import Iterable
 from dataclasses import dataclass
 import logging
 
-from miio import AirQualityMonitor, DeviceException
+from miio import DeviceException
 from miio.gateway.gateway import (
     GATEWAY_MODEL_AC_V1,
     GATEWAY_MODEL_AC_V2,
@@ -28,9 +27,7 @@ from homeassistant.const import (
     ATTR_TEMPERATURE,
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     CONCENTRATION_PARTS_PER_MILLION,
-    CONF_HOST,
     CONF_MODEL,
-    CONF_TOKEN,
     LIGHT_LUX,
     PERCENTAGE,
     REVOLUTIONS_PER_MINUTE,
@@ -83,15 +80,9 @@ from .const import (
     MODEL_FAN_ZA3,
     MODEL_FAN_ZA4,
     MODEL_FAN_ZA5,
-    MODELS_AIR_QUALITY_MONITOR,
-    MODELS_HUMIDIFIER_MIIO,
     MODELS_HUMIDIFIER_MIOT,
     MODELS_HUMIDIFIER_MJJSQ,
-    MODELS_PURIFIER_MIIO,
-    MODELS_PURIFIER_MIOT,
     MODELS_VACUUM,
-    ROBOROCK_GENERIC,
-    ROCKROBO_GENERIC,
 )
 from .device import XiaomiCoordinatedMiioEntity, XiaomiMiioEntity
 from .gateway import XiaomiGatewayDevice
@@ -771,91 +762,95 @@ async def async_setup_entry(
     entities: list[SensorEntity] = []
 
     if config_entry.data[CONF_FLOW_TYPE] == CONF_GATEWAY:
-        gateway = hass.data[DOMAIN][config_entry.entry_id][CONF_GATEWAY]
-        # Gateway illuminance sensor
-        if gateway.model not in [
-            GATEWAY_MODEL_AC_V1,
-            GATEWAY_MODEL_AC_V2,
-            GATEWAY_MODEL_AC_V3,
-            GATEWAY_MODEL_AQARA,
-            GATEWAY_MODEL_EU,
-        ]:
-            description = SENSOR_TYPES[ATTR_ILLUMINANCE]
-            entities.append(
-                XiaomiGatewayIlluminanceSensor(
-                    gateway, config_entry.title, config_entry.unique_id, description
-                )
-            )
-        # Gateway sub devices
-        sub_devices = gateway.devices
-        for sub_device in sub_devices.values():
-            coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR][
-                sub_device.sid
-            ]
-            for sensor, description in SENSOR_TYPES.items():
-                if sensor not in sub_device.status:
-                    continue
-                entities.append(
-                    XiaomiGatewaySensor(
-                        coordinator, sub_device, config_entry, description
-                    )
-                )
+        entities.extend(_setup_gateway_sensors(hass, config_entry))
     elif config_entry.data[CONF_FLOW_TYPE] == CONF_DEVICE:
-        host = config_entry.data[CONF_HOST]
-        token = config_entry.data[CONF_TOKEN]
-        model: str = config_entry.data[CONF_MODEL]
-
-        if model in (MODEL_FAN_ZA1, MODEL_FAN_ZA3, MODEL_FAN_ZA4, MODEL_FAN_P5):
-            return
-
-        if model in MODELS_AIR_QUALITY_MONITOR:
-            unique_id = config_entry.unique_id
-            name = config_entry.title
-            _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
-
-            device = AirQualityMonitor(host, token)
-            description = SENSOR_TYPES[ATTR_AIR_QUALITY]
-            entities.append(
-                XiaomiAirQualityMonitor(
-                    name, device, config_entry, unique_id, description
-                )
-            )
-        else:
-            device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
-            sensors: Iterable[str] = []
-            if model in MODEL_TO_SENSORS_MAP:
-                sensors = MODEL_TO_SENSORS_MAP[model]
-            elif model in MODELS_HUMIDIFIER_MIOT:
-                sensors = HUMIDIFIER_MIOT_SENSORS
-            elif model in MODELS_HUMIDIFIER_MJJSQ:
-                sensors = HUMIDIFIER_MJJSQ_SENSORS
-            elif model in MODELS_HUMIDIFIER_MIIO:
-                sensors = HUMIDIFIER_MIIO_SENSORS
-            elif model in MODELS_PURIFIER_MIIO:
-                sensors = PURIFIER_MIIO_SENSORS
-            elif model in MODELS_PURIFIER_MIOT:
-                sensors = PURIFIER_MIOT_SENSORS
-            elif (
-                model in MODELS_VACUUM
-                or model.startswith(ROBOROCK_GENERIC)
-                or model.startswith(ROCKROBO_GENERIC)
-            ):
-                return _setup_vacuum_sensors(hass, config_entry, async_add_entities)
-
-            for sensor, description in SENSOR_TYPES.items():
-                if sensor not in sensors:
-                    continue
-                entities.append(
-                    XiaomiGenericSensor(
-                        device,
-                        config_entry,
-                        f"{sensor}_{config_entry.unique_id}",
-                        hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR],
-                        description,
-                    )
-                )
+        entities.extend(_setup_device_sensors(hass, config_entry))
 
     async_add_entities(entities)
+
+
+def _setup_gateway_sensors(hass: HomeAssistant, config_entry: ConfigEntry) -> list:
+    entities = []
+    gateway = hass.data[DOMAIN][config_entry.entry_id][CONF_GATEWAY]
+
+    # Gateway illuminance sensor
+    if gateway.model not in [
+        GATEWAY_MODEL_AC_V1,
+        GATEWAY_MODEL_AC_V2,
+        GATEWAY_MODEL_AC_V3,
+        GATEWAY_MODEL_AQARA,
+        GATEWAY_MODEL_EU,
+    ]:
+        description = SENSOR_TYPES[ATTR_ILLUMINANCE]
+        entities.append(
+            XiaomiGatewayIlluminanceSensor(
+                gateway, config_entry.title, config_entry.unique_id, description
+            )
+        )
+
+    # Gateway sub devices
+    sub_devices = gateway.devices
+    for sub_device in sub_devices.values():
+        coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR][
+            sub_device.sid
+        ]
+        entities.extend(_add_sub_device_sensors(coordinator, sub_device, config_entry))
+
+    return entities
+
+
+def _add_sub_device_sensors(coordinator, sub_device, config_entry) -> list:
+    return [
+        XiaomiGatewaySensor(coordinator, sub_device, config_entry, description)
+        for sensor, description in SENSOR_TYPES.items()
+        if sensor in sub_device.status
+    ]
+
+
+def _setup_device_sensors(hass: HomeAssistant, config_entry: ConfigEntry) -> list:
+    model = config_entry.data[CONF_MODEL]
+
+    if model in (
+        MODEL_FAN_ZA1,
+        MODEL_FAN_ZA3,
+        MODEL_FAN_ZA4,
+        MODEL_FAN_P5,
+        *MODELS_VACUUM,
+    ):
+        return []
+
+    SENSOR_MODEL_MAP = {}
+
+    for model, sensors in MODEL_TO_SENSORS_MAP.items():
+        SENSOR_MODEL_MAP[model] = sensors
+
+    for model in MODELS_HUMIDIFIER_MIOT:
+        SENSOR_MODEL_MAP[model] = HUMIDIFIER_MIOT_SENSORS
+
+    for model in MODELS_HUMIDIFIER_MJJSQ:
+        SENSOR_MODEL_MAP[model] = HUMIDIFIER_MJJSQ_SENSORS
+
+    sensors = SENSOR_MODEL_MAP.get(model, ())
+    return _add_generic_device_sensors(hass, config_entry, sensors)
+
+
+def _add_generic_device_sensors(
+    hass: HomeAssistant, config_entry: ConfigEntry, sensors
+) -> list:
+    device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
+    coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
+
+    return [
+        XiaomiGenericSensor(
+            device,
+            config_entry,
+            f"{sensor}_{config_entry.unique_id}",
+            coordinator,
+            description,
+        )
+        for sensor, description in SENSOR_TYPES.items()
+        if sensor in sensors
+    ]
 
 
 class XiaomiGenericSensor(XiaomiCoordinatedMiioEntity, SensorEntity):

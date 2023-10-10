@@ -304,21 +304,23 @@ class XiaomiPhilipsAbstractLight(XiaomiMiioEntity, LightEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
         if ATTR_BRIGHTNESS in kwargs:
-            brightness = kwargs[ATTR_BRIGHTNESS]
-            percent_brightness = ceil(100 * brightness / 255.0)
-
-            _LOGGER.debug(SET_BRIGHTNESS, brightness, percent_brightness)
-
-            result = await self._try_command(
-                "Setting brightness failed: %s",
-                self._device.set_brightness,
-                percent_brightness,
-            )
-
-            if result:
-                self._brightness = brightness
+            await self._adjust_brightness(kwargs[ATTR_BRIGHTNESS])
         else:
             await self._try_command(LIGHT_ON_FAILED, self._device.on)
+
+    async def _adjust_brightness(self, brightness: int) -> None:
+        """Adjust the brightness of the light."""
+        percent_brightness = ceil(100 * brightness / 255.0)
+        _LOGGER.debug(SET_BRIGHTNESS, brightness, percent_brightness)
+
+        result = await self._try_command(
+            "Setting brightness failed: %s",
+            self._device.set_brightness,
+            percent_brightness,
+        )
+
+        if result:
+            self._brightness = brightness
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""

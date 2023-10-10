@@ -230,40 +230,31 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         cloud_password = user_input.get(CONF_CLOUD_PASSWORD)
         cloud_country = user_input.get(CONF_CLOUD_COUNTRY)
 
-        if not cloud_username or not cloud_password or not cloud_country:
-            errors["base"] = "cloud_credentials_incomplete"
-            return self.async_show_form(
-                step_id="cloud", data_schema=DEVICE_CLOUD_CONFIG, errors=errors
-            )
+        handle_invalid_cloud_info_result = await self.handle_invalid_cloud_info(
+            errors, cloud_username, cloud_password, cloud_country
+        )
+        if handle_invalid_cloud_info_result is not None:
+            return handle_invalid_cloud_info_result
 
         miio_cloud = MiCloud(cloud_username, cloud_password)
-        try:
-            if not await self.hass.async_add_executor_job(miio_cloud.login):
-                errors["base"] = "cloud_login_error"
-        except MiCloudAccessDenied:
-            errors["base"] = "cloud_login_error"
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception in Miio cloud login")
-            return self.async_abort(reason="unknown")
+        handle_add_executer_result = await self.handle_add_executer(miio_cloud, errors)
+        if handle_add_executer_result is not None:
+            return handle_add_executer_result
 
         if errors:
             return self.async_show_form(
                 step_id="cloud", data_schema=DEVICE_CLOUD_CONFIG, errors=errors
             )
 
-        try:
-            devices_raw = await self.hass.async_add_executor_job(
-                miio_cloud.get_devices, cloud_country
-            )
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception in Miio cloud get devices")
-            return self.async_abort(reason="unknown")
+        devices_raw: dict[Any, Any] = {}
+        result_handle_device_raw = await self.handle_device_raw(
+            miio_cloud, cloud_country, errors
+        )
+        if type(result_handle_device_raw) is FlowResult:
+            return result_handle_device_raw
+        devices_raw = result_handle_device_raw  # type: ignore[assignment]
 
-        if not devices_raw:
-            errors["base"] = "cloud_no_devices"
-            return self.async_show_form(
-                step_id="cloud", data_schema=DEVICE_CLOUD_CONFIG, errors=errors
-            )
+        await self.handle_connect()
 
         self.cloud_devices = {}
         for device in devices_raw:
@@ -277,18 +268,69 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.cloud_password = cloud_password
         self.cloud_country = cloud_country
 
+        if len(self.cloud_devices) == 1:
+            self.extract_cloud_info(list(self.cloud_devices.values())[0])
+            return await self.async_step_connect()
+
+        return await self.async_step_select()
+
+    async def handle_add_executer(
+        self, miio_cloud: Any, errors: dict[Any, Any]
+    ) -> FlowResult | None:
+        """Handle add executer."""
+        try:
+            if not await self.hass.async_add_executor_job(miio_cloud.login):
+                errors["base"] = "cloud_login_error"
+            return None
+        except MiCloudAccessDenied:
+            errors["base"] = "cloud_login_error"
+            return None
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception in Miio cloud login")
+            return self.async_abort(reason="unknown")
+
+    async def handle_device_raw(
+        self, miio_cloud: Any, cloud_country: Any, errors: dict[Any, Any]
+    ) -> dict[Any, Any] | FlowResult:
+        """Handle device raw."""
+        try:
+            devices_raw: dict[Any, Any] = await self.hass.async_add_executor_job(
+                miio_cloud.get_devices, cloud_country
+            )
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception in Miio cloud get devices")
+            return self.async_abort(reason="unknown")
+        if not devices_raw:
+            errors["base"] = "cloud_no_devices"
+            return self.async_show_form(
+                step_id="cloud", data_schema=DEVICE_CLOUD_CONFIG, errors=errors
+            )
+        return devices_raw
+
+    async def handle_invalid_cloud_info(
+        self,
+        errors: dict[Any, Any],
+        cloud_username: Any | None,
+        cloud_password: Any | None,
+        cloud_country: Any | None,
+    ) -> FlowResult | None:
+        """Handle invalid cloud info."""
+        if not cloud_username or not cloud_password or not cloud_country:
+            errors["base"] = "cloud_credentials_incomplete"
+            return self.async_show_form(
+                step_id="cloud", data_schema=DEVICE_CLOUD_CONFIG, errors=errors
+            )
+        return None
+
+    async def handle_connect(self) -> FlowResult | None:
+        """Handle connect."""
         if self.host is not None:
             for device in self.cloud_devices.values():
                 cloud_host = device.get("localip")
                 if cloud_host == self.host:
                     self.extract_cloud_info(device)
                     return await self.async_step_connect()
-
-        if len(self.cloud_devices) == 1:
-            self.extract_cloud_info(list(self.cloud_devices.values())[0])
-            return await self.async_step_connect()
-
-        return await self.async_step_select()
+        return None
 
     async def async_step_select(
         self, user_input: dict[str, Any] | None = None

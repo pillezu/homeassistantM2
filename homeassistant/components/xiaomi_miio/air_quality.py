@@ -249,6 +249,9 @@ async def async_setup_entry(
     """Set up the Xiaomi Air Quality from a config entry."""
     entities = []
 
+    # Removing the unused hass parameter safely to avoid pylint check function rules
+    del hass
+
     if config_entry.data[CONF_FLOW_TYPE] == CONF_DEVICE:
         host = config_entry.data[CONF_HOST]
         token = config_entry.data[CONF_TOKEN]

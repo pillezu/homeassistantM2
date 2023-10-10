@@ -75,6 +75,9 @@ async def async_setup_platform(
     host = config[CONF_HOST]
     token = config[CONF_TOKEN]
 
+    # Removing the unused parameter discovery_info to avoid hass argument type checks and mypy errors
+    del discovery_info
+
     # Create handler
     _LOGGER.info("Initializing with host %s (token %s...)", host, token[:5])
 

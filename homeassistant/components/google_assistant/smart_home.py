@@ -213,11 +213,7 @@ async def handle_devices_execute(
             entity_id = device["id"]
 
             # Happens if error occurred. Skip entity for further processing
-            if entity_id in results:
-                continue
-
-            if entity_id in entities:
-                executions[entity_id].append(execution)
+            if check_error(entity_id, results, entities, executions, execution):
                 continue
 
             if (state := hass.states.get(entity_id)) is None:
@@ -266,6 +262,23 @@ async def handle_devices_execute(
         )
 
     return {"commands": final_results}
+
+
+def check_error(
+    entity_id: Any,
+    results: dict[str, dict[str, Any]],
+    entities: dict[str, GoogleEntity],
+    executions: dict[str, list[Any]],
+    execution: Any,
+) -> bool:
+    """Check if error occurred, return True. If no error, return False."""
+    if entity_id in results:
+        return True
+
+    if entity_id in entities:
+        executions[entity_id].append(execution)
+        return True
+    return False
 
 
 @HANDLERS.register("action.devices.DISCONNECT")

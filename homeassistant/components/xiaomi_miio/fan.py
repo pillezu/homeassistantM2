@@ -1183,4 +1183,3 @@ class XiaomiFan1C(XiaomiFanMiot):
         if result:
             self._percentage = ranged_value_to_percentage((1, self._speed_count), speed)
             self.async_write_ha_state()
-

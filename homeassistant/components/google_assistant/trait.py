@@ -2019,21 +2019,9 @@ class OpenCloseTrait(_Trait):
             else:
                 position = params["openPercent"]
 
-            if position == 0:
-                service = cover.SERVICE_CLOSE_COVER
-                should_verify = False
-            elif position == 100:
-                service = cover.SERVICE_OPEN_COVER
-                should_verify = True
-            elif features & CoverEntityFeature.SET_POSITION:
-                service = cover.SERVICE_SET_COVER_POSITION
-                if position > 0:
-                    should_verify = True
-                svc_params[cover.ATTR_POSITION] = position
-            else:
-                raise SmartHomeError(
-                    ERR_NOT_SUPPORTED, "No support for partial open close"
-                )
+            service, should_verify = self.executeOpenCloseEvaluator(
+                position, svc_params, features
+            )
 
             if (
                 should_verify
@@ -2049,6 +2037,23 @@ class OpenCloseTrait(_Trait):
                 blocking=not self.config.should_report_state,
                 context=data.context,
             )
+
+    def executeOpenCloseEvaluator(self, position, svc_params, features):
+        """Evaluate open close set position command."""
+        if position == 0:
+            service = cover.SERVICE_CLOSE_COVER
+            should_verify = False
+        elif position == 100:
+            service = cover.SERVICE_OPEN_COVER
+            should_verify = True
+        elif features & CoverEntityFeature.SET_POSITION:
+            service = cover.SERVICE_SET_COVER_POSITION
+            if position > 0:
+                should_verify = True
+            svc_params[cover.ATTR_POSITION] = position
+        else:
+            raise SmartHomeError(ERR_NOT_SUPPORTED, "No support for partial open close")
+        return service, should_verify
 
 
 @register_trait

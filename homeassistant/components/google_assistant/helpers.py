@@ -178,7 +178,7 @@ class AbstractConfig(ABC):
     def should_expose(self, state) -> bool:
         """Return if entity should be exposed."""
 
-    def should_2fa():
+    def should_2fa(self):
         """If an entity should have 2FA checked."""
         return True
 

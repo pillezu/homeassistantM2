@@ -243,8 +243,16 @@ async def handle_devices_execute(
     except asyncio.TimeoutError:
         pass
 
-    final_results = list(results.values())
+    final_results = update_entities(entities, results)
 
+    return {"commands": final_results}
+
+
+def update_entities(
+    entities: dict[str, GoogleEntity], results: dict[str, dict[str, Any]]
+) -> list:
+    """Loop through entities and update them and append to final result."""
+    final_results = list(results.values())
     for entity in entities.values():
         if entity.entity_id in results:
             continue
@@ -258,8 +266,7 @@ async def handle_devices_execute(
                 "states": entity.query_serialize(),
             }
         )
-
-    return {"commands": final_results}
+    return final_results
 
 
 def check_error(

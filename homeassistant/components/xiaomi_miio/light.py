@@ -220,7 +220,6 @@ async def async_setup_entry_lights(
             ),
             model,
         )
-        return light, entity
 
 
 async def async_service_handler(

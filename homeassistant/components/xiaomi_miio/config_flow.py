@@ -380,37 +380,23 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.model = user_input[CONF_MODEL]
 
-        # Try to connect to a Xiaomi Device.
-        connect_device_class = ConnectXiaomiDevice(self.hass)
-        try:
-            await connect_device_class.async_connect_device(self.host, self.token)
-        except AuthException:
-            if self.model is None:
-                errors["base"] = "wrong_token"
-        except SetupException:
-            if self.model is None:
-                errors["base"] = "cannot_connect"
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception in connect Xiaomi device")
+        connectFailed, connect_device_class = await self.async_connect_xiaomi_device(
+            errors=errors
+        )
+        if connectFailed:
             return self.async_abort(reason="unknown")
 
         device_info = connect_device_class.device_info
 
-        if self.model is None and device_info is not None:
-            self.model = device_info.model
+        errors_while_evaluating, unique_id = await self.async_evaluate_connection_model(
+            errors=errors, device_info=device_info
+        )
 
-        if self.model is None and not errors:
-            errors["base"] = "cannot_connect"
-
-        if errors:
+        if errors_while_evaluating:
             return self.async_show_form(
                 step_id="connect", data_schema=DEVICE_MODEL_CONFIG, errors=errors
             )
 
-        if self.mac is None and device_info is not None:
-            self.mac = format_mac(device_info.mac_address)
-
-        unique_id = self.mac
         existing_entry = await self.async_set_unique_id(
             unique_id, raise_on_progress=False
         )
@@ -433,15 +419,7 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if self.name is None:
             self.name = self.model
 
-        flow_type = None
-        for gateway_model in MODELS_GATEWAY:
-            if self.model.startswith(gateway_model):
-                flow_type = CONF_GATEWAY
-
-        if flow_type is None:
-            for device_model in MODELS_ALL_DEVICES:
-                if self.model.startswith(device_model):
-                    flow_type = CONF_DEVICE
+        flow_type = await self.async_evaluate_flow_type(model=self.model)
 
         if flow_type is not None:
             return self.async_create_entry(
@@ -462,3 +440,55 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="connect", data_schema=DEVICE_MODEL_CONFIG, errors=errors
         )
+
+    async def async_connect_xiaomi_device(
+        self, errors: dict[str, str]
+    ) -> tuple[bool, ConnectXiaomiDevice]:
+        """Try to connect to a xiaomi miio device."""
+        connect_device_class = ConnectXiaomiDevice(self.hass)
+        try:
+            await connect_device_class.async_connect_device(self.host, self.token)
+            return False, connect_device_class
+        except AuthException:
+            if self.model is None:
+                errors["base"] = "wrong_token"
+                return False, connect_device_class
+        except SetupException:
+            if self.model is None:
+                errors["base"] = "cannot_connect"
+                return False, connect_device_class
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception in connect Xiaomi device")
+            return True, connect_device_class
+        return False, connect_device_class
+
+    async def async_evaluate_connection_model(
+        self, errors: dict[str, str], device_info
+    ) -> tuple[bool, str | None]:
+        """Evaluate the connection model."""
+        if self.model is None and device_info is not None:
+            self.model = device_info.model
+
+        if self.model is None and not errors:
+            errors["base"] = "cannot_connect"
+
+        if errors:
+            return True, self.mac
+
+        if self.mac is None and device_info is not None:
+            self.mac = format_mac(device_info.mac_address)
+
+        return False, self.mac
+
+    async def async_evaluate_flow_type(self, model) -> Any:
+        """Evaluate the flow type for the connection."""
+        flow_type = None
+        for gateway_model in MODELS_GATEWAY:
+            if model.startswith(gateway_model):
+                flow_type = CONF_GATEWAY
+
+        if flow_type is None:
+            for device_model in MODELS_ALL_DEVICES:
+                if model.startswith(device_model):
+                    flow_type = CONF_DEVICE
+        return flow_type

@@ -360,14 +360,13 @@ class XiaomiAirHumidifierMiot(XiaomiAirHumidifier):
             return
 
         _LOGGER.debug(SET_OPERATION_MODE, mode)
-        if self._state:
-            if await self._try_command(
-                SET_OPERATION_MODE_FAILED,
-                self._device.set_mode,
-                self.REVERSE_MODE_MAPPING[mode],
-            ):
-                self._mode = self.REVERSE_MODE_MAPPING[mode].value
-                self.async_write_ha_state()
+        if self._state and await self._try_command(
+            SET_OPERATION_MODE_FAILED,
+            self._device.set_mode,
+            self.REVERSE_MODE_MAPPING[mode],
+        ):
+            self._mode = self.REVERSE_MODE_MAPPING[mode].value
+            self.async_write_ha_state()
 
 
 class XiaomiAirHumidifierMjjsq(XiaomiAirHumidifier):
@@ -388,12 +387,11 @@ class XiaomiAirHumidifierMjjsq(XiaomiAirHumidifier):
     @property
     def target_humidity(self):
         """Return the target humidity."""
-        if self._state:
-            if (
-                AirhumidifierMjjsqOperationMode(self._mode)
-                == AirhumidifierMjjsqOperationMode.Humidity
-            ):
-                return self._target_humidity
+        if self._state and (
+            AirhumidifierMjjsqOperationMode(self._mode)
+            == AirhumidifierMjjsqOperationMode.Humidity
+        ):
+            return self._target_humidity
         return None
 
     async def async_set_humidity(self, humidity: int) -> None:
@@ -432,11 +430,8 @@ class XiaomiAirHumidifierMjjsq(XiaomiAirHumidifier):
             return
 
         _LOGGER.debug(SET_OPERATION_MODE, mode)
-        if self._state:
-            if await self._try_command(
-                SET_OPERATION_MODE_FAILED,
-                self._device.set_mode,
-                self.MODE_MAPPING[mode],
-            ):
-                self._mode = self.MODE_MAPPING[mode].value
-                self.async_write_ha_state()
+        if self._state and await self._try_command(
+            SET_OPERATION_MODE_FAILED, self._device.set_mode, self.MODE_MAPPING[mode]
+        ):
+            self._mode = self.MODE_MAPPING[mode].value
+            self.async_write_ha_state()

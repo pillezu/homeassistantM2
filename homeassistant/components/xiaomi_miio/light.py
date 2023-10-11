@@ -9,14 +9,7 @@ import logging
 from math import ceil
 from typing import Any
 
-from miio import (
-    Ceil,
-    Device as MiioDevice,
-    DeviceException,
-    PhilipsBulb,
-    PhilipsEyecare,
-    PhilipsMoonlight,
-)
+from miio import Ceil, DeviceException, PhilipsBulb, PhilipsEyecare, PhilipsMoonlight
 from miio.gateway.gateway import (
     GATEWAY_MODEL_AC_V1,
     GATEWAY_MODEL_AC_V2,
@@ -130,8 +123,6 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Xiaomi light from a config entry."""
     entities: list[LightEntity] = []
-    entity: LightEntity
-    light: MiioDevice
 
     if config_entry.data[CONF_FLOW_TYPE] == CONF_GATEWAY:
         gateway = hass.data[DOMAIN][config_entry.entry_id][CONF_GATEWAY]
@@ -167,86 +158,96 @@ async def async_setup_entry(
 
         _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
 
-        if model in MODELS_LIGHT_EYECARE:
-            light = PhilipsEyecare(host, token)
-            entity = XiaomiPhilipsEyecareLamp(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
-
-            entities.append(
-                XiaomiPhilipsEyecareLampAmbientLight(
-                    name, light, config_entry, unique_id
-                )
-            )
-            # The ambient light doesn't expose additional services.
-            # A hass.data[DATA_KEY] entry isn't needed.
-        elif model in MODELS_LIGHT_CEILING:
-            light = Ceil(host, token)
-            entity = XiaomiPhilipsCeilingLamp(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
-        elif model in MODELS_LIGHT_MOON:
-            light = PhilipsMoonlight(host, token)
-            entity = XiaomiPhilipsMoonlightLamp(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
-        elif model in MODELS_LIGHT_BULB:
-            light = PhilipsBulb(host, token)
-            entity = XiaomiPhilipsBulb(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
-        elif model in MODELS_LIGHT_MONO:
-            light = PhilipsBulb(host, token)
-            entity = XiaomiPhilipsGenericLight(name, light, config_entry, unique_id)
-            entities.append(entity)
-            hass.data[DATA_KEY][host] = entity
-        else:
-            _LOGGER.error(
-                (
-                    "Unsupported device found! Please create an issue at "
-                    "https://github.com/syssi/philipslight/issues "
-                    "and provide the following data: %s"
-                ),
-                model,
-            )
-            return
-
-        async def async_service_handler(service: ServiceCall) -> None:
-            """Map services to methods on Xiaomi Philips Lights."""
-            method = SERVICE_TO_METHOD[service.service]
-            params = {
-                key: value
-                for key, value in service.data.items()
-                if key != ATTR_ENTITY_ID
-            }
-            if entity_ids := service.data.get(ATTR_ENTITY_ID):
-                target_devices = [
-                    dev
-                    for dev in hass.data[DATA_KEY].values()
-                    if dev.entity_id in entity_ids
-                ]
-            else:
-                target_devices = hass.data[DATA_KEY].values()
-
-            update_tasks = []
-            for target_device in target_devices:
-                if not hasattr(target_device, method["method"]):
-                    continue
-                await getattr(target_device, method["method"])(**params)
-                update_tasks.append(
-                    asyncio.create_task(target_device.async_update_ha_state(True))
-                )
-
-            if update_tasks:
-                await asyncio.wait(update_tasks)
+        async_setup_entry_lights(
+            model, host, token, name, config_entry, unique_id, entities, hass
+        )
 
         for xiaomi_miio_service, method in SERVICE_TO_METHOD.items():
             schema = method.get("schema", XIAOMI_MIIO_SERVICE_SCHEMA)
             hass.services.async_register(
-                DOMAIN, xiaomi_miio_service, async_service_handler, schema=schema
+                DOMAIN,
+                xiaomi_miio_service,
+                lambda service: async_service_handler(
+                    service, hass, DATA_KEY, SERVICE_TO_METHOD
+                ),
+                schema=schema,
             )
 
     async_add_entities(entities, update_before_add=True)
+
+
+async def async_setup_entry_lights(
+    model, host, token, name, config_entry, unique_id, entities, hass
+):
+    """Set up specific lights based on model."""
+    if model in MODELS_LIGHT_EYECARE:
+        light = PhilipsEyecare(host, token)
+        entity = XiaomiPhilipsEyecareLamp(name, light, config_entry, unique_id)
+        entities.append(entity)
+        hass.data[DATA_KEY][host] = entity
+
+        entities.append(
+            XiaomiPhilipsEyecareLampAmbientLight(name, light, config_entry, unique_id)
+        )
+        # The ambient light doesn't expose additional services.
+        # A hass.data[DATA_KEY] entry isn't needed.
+    elif model in MODELS_LIGHT_CEILING:
+        light = Ceil(host, token)
+        entity = XiaomiPhilipsCeilingLamp(name, light, config_entry, unique_id)
+        entities.append(entity)
+        hass.data[DATA_KEY][host] = entity
+    elif model in MODELS_LIGHT_MOON:
+        light = PhilipsMoonlight(host, token)
+        entity = XiaomiPhilipsMoonlightLamp(name, light, config_entry, unique_id)
+        entities.append(entity)
+        hass.data[DATA_KEY][host] = entity
+    elif model in MODELS_LIGHT_BULB:
+        light = PhilipsBulb(host, token)
+        entity = XiaomiPhilipsBulb(name, light, config_entry, unique_id)
+        entities.append(entity)
+        hass.data[DATA_KEY][host] = entity
+    elif model in MODELS_LIGHT_MONO:
+        light = PhilipsBulb(host, token)
+        entity = XiaomiPhilipsGenericLight(name, light, config_entry, unique_id)
+        entities.append(entity)
+        hass.data[DATA_KEY][host] = entity
+    else:
+        _LOGGER.error(
+            (
+                "Unsupported device found! Please create an issue at "
+                "https://github.com/syssi/philipslight/issues "
+                "and provide the following data: %s"
+            ),
+            model,
+        )
+
+
+async def async_service_handler(
+    service: ServiceCall, hass: HomeAssistant, data_key: str, service_to_method: dict
+) -> None:
+    """Map services to methods on Xiaomi Philips Lights."""
+    method = SERVICE_TO_METHOD[service.service]
+    params = {
+        key: value for key, value in service.data.items() if key != ATTR_ENTITY_ID
+    }
+    if entity_ids := service.data.get(ATTR_ENTITY_ID):
+        target_devices = [
+            dev for dev in hass.data[DATA_KEY].values() if dev.entity_id in entity_ids
+        ]
+    else:
+        target_devices = hass.data[DATA_KEY].values()
+
+    update_tasks = []
+    for target_device in target_devices:
+        if not hasattr(target_device, method["method"]):
+            continue
+        await getattr(target_device, method["method"])(**params)
+        update_tasks.append(
+            asyncio.create_task(target_device.async_update_ha_state(True))
+        )
+
+    if update_tasks:
+        await asyncio.wait(update_tasks)
 
 
 class XiaomiPhilipsAbstractLight(XiaomiMiioEntity, LightEntity):

@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from homeassistant.const import ATTR_ENTITY_ID, __version__
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import instance_id
 from homeassistant.util.decorator import Registry
 
@@ -213,20 +213,14 @@ async def handle_devices_execute(
             entity_id = device["id"]
 
             # Happens if error occurred. Skip entity for further processing
-            if entity_id in results:
+            error_occurred, temp_state = check_error(
+                entity_id, results, entities, executions, execution, hass
+            )
+            if error_occurred:
                 continue
 
-            if entity_id in entities:
-                executions[entity_id].append(execution)
-                continue
-
-            if (state := hass.states.get(entity_id)) is None:
-                results[entity_id] = {
-                    "ids": [entity_id],
-                    "status": "ERROR",
-                    "errorCode": ERR_DEVICE_OFFLINE,
-                }
-                continue
+            if temp_state is not None:
+                state = temp_state
 
             entities[entity_id] = GoogleEntity(hass, data.config, state)
             executions[entity_id] = [execution]
@@ -249,8 +243,16 @@ async def handle_devices_execute(
     except asyncio.TimeoutError:
         pass
 
-    final_results = list(results.values())
+    final_results = update_entities(entities, results)
 
+    return {"commands": final_results}
+
+
+def update_entities(
+    entities: dict[str, GoogleEntity], results: dict[str, dict[str, Any]]
+) -> list:
+    """Loop through entities and update them and append to final result."""
+    final_results = list(results.values())
     for entity in entities.values():
         if entity.entity_id in results:
             continue
@@ -264,8 +266,33 @@ async def handle_devices_execute(
                 "states": entity.query_serialize(),
             }
         )
+    return final_results
 
-    return {"commands": final_results}
+
+def check_error(
+    entity_id: Any,
+    results: dict[str, dict[str, Any]],
+    entities: dict[str, GoogleEntity],
+    executions: dict[str, list[Any]],
+    execution: Any,
+    hass: HomeAssistant,
+) -> tuple[bool, State | None]:
+    """Check if error occurred, return True. If no error, return False."""
+    if entity_id in results:
+        return True, None
+
+    if entity_id in entities:
+        executions[entity_id].append(execution)
+        return True, None
+
+    if (state := hass.states.get(entity_id)) is None:
+        results[entity_id] = {
+            "ids": [entity_id],
+            "status": "ERROR",
+            "errorCode": ERR_DEVICE_OFFLINE,
+        }
+        return True, None
+    return False, state
 
 
 @HANDLERS.register("action.devices.DISCONNECT")

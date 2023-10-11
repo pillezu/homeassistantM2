@@ -246,27 +246,28 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="cloud", data_schema=DEVICE_CLOUD_CONFIG, errors=errors
             )
 
-        devices_raw: dict[Any, Any] = {}
-        result_handle_device_raw = await self.handle_device_raw(
-            miio_cloud, cloud_country, errors
-        )
-        if type(result_handle_device_raw) is FlowResult:
-            return result_handle_device_raw
-        devices_raw = result_handle_device_raw  # type: ignore[assignment]
+        try:
+            devices_raw = await self.hass.async_add_executor_job(
+                miio_cloud.get_devices, cloud_country
+            )
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception in Miio cloud get devices")
+            return self.async_abort(reason="unknown")
 
-        await self.handle_connect()
+        if not devices_raw:
+            errors["base"] = "cloud_no_devices"
+            return self.async_show_form(
+                step_id="cloud", data_schema=DEVICE_CLOUD_CONFIG, errors=errors
+            )
 
         self.cloud_devices = {}
-        for device in devices_raw:
-            if not device.get("parent_id"):
-                name = device["name"]
-                model = device["model"]
-                list_name = f"{name} - {model}"
-                self.cloud_devices[list_name] = device
+        self.handle_raw(self.cloud_devices, devices_raw)
 
         self.cloud_username = cloud_username
         self.cloud_password = cloud_password
         self.cloud_country = cloud_country
+
+        await self.handle_connect()
 
         if len(self.cloud_devices) == 1:
             self.extract_cloud_info(list(self.cloud_devices.values())[0])
@@ -288,24 +289,6 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected exception in Miio cloud login")
             return self.async_abort(reason="unknown")
-
-    async def handle_device_raw(
-        self, miio_cloud: Any, cloud_country: Any, errors: dict[Any, Any]
-    ) -> dict[Any, Any] | FlowResult:
-        """Handle device raw."""
-        try:
-            devices_raw: dict[Any, Any] = await self.hass.async_add_executor_job(
-                miio_cloud.get_devices, cloud_country
-            )
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception in Miio cloud get devices")
-            return self.async_abort(reason="unknown")
-        if not devices_raw:
-            errors["base"] = "cloud_no_devices"
-            return self.async_show_form(
-                step_id="cloud", data_schema=DEVICE_CLOUD_CONFIG, errors=errors
-            )
-        return devices_raw
 
     async def handle_invalid_cloud_info(
         self,
@@ -331,6 +314,15 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     self.extract_cloud_info(device)
                     return await self.async_step_connect()
         return None
+
+    def handle_raw(self, cloud_devices: dict[str, dict[str, Any]], devices_raw: Any):
+        """Handle raw devices."""
+        for device in devices_raw:
+            if not device.get("parent_id"):
+                name = device["name"]
+                model = device["model"]
+                list_name = f"{name} - {model}"
+                cloud_devices[list_name] = device
 
     async def async_step_select(
         self, user_input: dict[str, Any] | None = None
@@ -380,10 +372,10 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.model = user_input[CONF_MODEL]
 
-        connectFailed, connect_device_class = await self.async_connect_xiaomi_device(
+        connect_failed, connect_device_class = await self.async_connect_xiaomi_device(
             errors=errors
         )
-        if connectFailed:
+        if connect_failed:
             return self.async_abort(reason="unknown")
 
         device_info = connect_device_class.device_info
